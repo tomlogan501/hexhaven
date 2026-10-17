@@ -300,8 +300,8 @@ check('longest road counts the single segment', g.longest.length === 1,
     gTrade.players[2].hand.forest === 0 && gTrade.players[2].hand.pasture === 1);
   check('AI trade offer and acceptance are logged',
     gTrade.log.length > before &&
-    gTrade.log.some(line => /Mira offered 1 Sheep to Tomas for 1 Wood/.test(line)) &&
-    gTrade.log.some(line => /Mira traded 1 Sheep to Tomas for 1 Wood/.test(line)),
+    gTrade.log.some(line => /Mira offered 1 Sheep to Thomas for 1 Wood/.test(line)) &&
+    gTrade.log.some(line => /Mira traded 1 Sheep to Thomas for 1 Wood/.test(line)),
     gTrade.log.slice(before).join(' | '));
 
   const gDecline = ctx.STATE.newGame(3, 2);

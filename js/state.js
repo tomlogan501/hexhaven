@@ -66,7 +66,7 @@ const STATE = (() => {
 
   function newGame(playerCount = 2, radius = 2) {
     const map = MAPGEN.build(radius);
-    const names = ['You', 'Mira', 'Tomas', 'Ada'];
+    const names = ['You', 'Mira', 'Thomas', 'Ada'];
     const players = [];
     for (let i = 0; i < playerCount; i++) {
       players.push(newPlayer(i, names[i], i !== 0));
