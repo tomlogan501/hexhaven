@@ -36,8 +36,13 @@
     <!-- Compact bottom bar: resources, then build tools + dice on ONE row,
          a single hint line, and secondary options tucked into a gear menu.
          Empty containers must not reserve space. -->
-    <section class="hud" id="hud-hand">
+    <!-- Player resources float bottom-left as their own small panel,
+         separate from the action bar. -->
+    <section class="hud" id="hud-res">
       <div id="hand" class="chips"></div>
+    </section>
+
+    <section class="hud" id="hud-hand">
       <div class="handbar">
         <div class="chips" id="buildbar">
           <button class="btn" id="build-settlement" data-build="settlement">Settlement</button>
