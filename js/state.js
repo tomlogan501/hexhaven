@@ -5,7 +5,7 @@ const STATE = (() => {
     pasture: { label: 'Sheep', color: '#8ec06c', icon: '🐑' },
     field:   { label: 'Grain', color: '#d8c35a', icon: '🌾' },
     hill:    { label: 'Brick', color: '#b0764a', icon: '🧱' },
-    mount:   { label: 'Ore',   color: '#8d8d95', icon: '⛰' },
+    mount:   { label: 'Ore',   color: '#8d8d95', icon: '🪨' },
   };
 
   const PLAYER_COLORS = ['#e05c5c', '#4a90d9', '#57b85b', '#e0a83c'];
