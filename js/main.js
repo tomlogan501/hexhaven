@@ -272,6 +272,10 @@
     }
     const buy = $('btn-dev');
     if (buy) {
+      // Same rule as the build pieces: hide the purchase it can't pay for.
+      const cantPay = !busy && g.current === 0 && g.phase === 'build' &&
+        g.deck.length > 0 && !RULES.canAfford(p, 'devCard');
+      buy.classList.toggle('hidden', cantPay);
       buy.disabled = g.current !== 0 || busy || g.phase !== 'build' ||
         g.deck.length === 0 || !RULES.canAfford(p, 'devCard');
     }
@@ -969,10 +973,26 @@
   });
 
   function syncBuildBar() {
+    const p = g.players[0];
+    const buildable = !busy && g.current === 0 && (isSetup() || g.phase === 'build');
     for (const b of document.querySelectorAll('[data-build]')) {
-      b.classList.toggle('active', b.dataset.build === tool);
+      const kind = b.dataset.build;
+      b.classList.toggle('active', kind === tool);
+      // Hide the pieces the player cannot pay for: setup placement and
+      // Road Building credits are free, everything else needs the cost
+      // (RULES.COST via canAfford). Disabled-but-visible on other turns
+      // so the bar doesn't flicker while the AIs play.
+      let freeNow = false;
+      if (kind === 'settlement') freeNow = g.phase === 'setup1';
+      else if (kind === 'road') {
+        freeNow = g.phase === 'setup2' || (p && p.freeRoads > 0);
+      }
+      const cantPay = buildable && !freeNow && !RULES.canAfford(p, kind);
+      b.classList.toggle('hidden', cantPay);
       b.disabled = g.current !== 0 || busy ||
         !(isSetup() || g.phase === 'build');
+      // An active tool must not keep board highlights when it's unpayable.
+      if (cantPay && kind === tool) tool = null;
     }
     const tradeBtn = $('btn-trade');
     if (tradeBtn) {
