@@ -90,16 +90,15 @@ body {
 #hud-players { top: 14px; left: 14px; min-width: 200px; }
 #hud-log { top: 14px; right: 14px; width: 320px; }
 
-/* Hand and primary actions sit centred along the bottom edge as a compact
-   bar: resources, one row of tools + dice, one line of hints, and the
-   secondary options hidden behind the gear popover. */
+/* Hand and primary actions float along the bottom-LEFT edge: resources on
+   their own line, then one row of tools + dice, then the hints line, with
+   the secondary options hidden behind the gear popover. */
 #hud-hand {
-  left: 50%;
+  left: 14px;
   bottom: 14px;
-  transform: translateX(-50%);
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
   gap: 4px;
   padding: 7px 12px;
   max-width: min(880px, 96vw);
@@ -128,7 +127,7 @@ body {
 }
 
 /* Both hints share a single quiet line. */
-.hintline { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
+.hintline { display: flex; gap: 14px; flex-wrap: wrap; justify-content: flex-start; }
 .hintline .hint { margin: 0; font-size: 11.5px; }
 #hud-hand #rollresult { font-size: 12px; color: var(--gold); opacity: .9; margin: 0; }
 
@@ -269,6 +268,17 @@ body {
 }
 
 .res .dot { width: 14px; height: 14px; border-radius: 50%; border: 1px solid rgba(0, 0, 0, .45); flex: none; }
+
+/* Hand chips carry the same artwork as the harbor badges — the emoji icon —
+   a little bigger than the old 14px colour dot. */
+.res .icon {
+  font-size: 19px;
+  line-height: 1;
+  width: 22px;
+  text-align: center;
+  flex: none;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, .4));
+}
 
 /* Robber steal: clickable victim rows in the players panel. */
 .player.steal-target {

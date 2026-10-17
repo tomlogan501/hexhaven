@@ -226,9 +226,11 @@
         (discardNeed > 0 && p.hand[res] - picked > 0 ? ' pick' : '') +
         (picked > 0 ? ' picked' : '');
       chip.dataset.res = res;
-      const dot = document.createElement('span');
-      dot.className = 'dot';
-      dot.style.background = info.color;
+      // The resource chip shows the same artwork as the harbor badges, a
+      // little bigger (`#hud-hand .res .icon` in style.css).
+      const icon = document.createElement('span');
+      icon.className = 'icon';
+      icon.textContent = MAPGEN.HARBOR_LABELS[res] || '•';
       // Label and count are separate spans so small screens can hide the
       // word and keep just the coloured dot + count (see CSS).
       const label = document.createElement('span');
@@ -237,7 +239,7 @@
       const count = document.createElement('span');
       count.className = 'rescount';
       count.textContent = '×' + p.hand[res] + (picked > 0 ? ' (−' + picked + ')' : '');
-      chip.append(dot, label, count);
+      chip.append(icon, label, count);
       el.appendChild(chip);
     }
 
