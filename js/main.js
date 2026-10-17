@@ -122,7 +122,7 @@
       sw.style.background = p.color;
 
       const nm = document.createElement('span');
-      nm.textContent = p.name + (p.isAI ? '' : ' (you)');
+      nm.textContent = p.name;
       if (p.devCards.length) badge(nm, p.devCards.length + ' dev');
       if (p.playedKnights) {
         badge(nm, p.playedKnights + ' knight' + (p.playedKnights === 1 ? '' : 's'));
@@ -1130,7 +1130,7 @@
     for (const k of Object.keys(discardPick)) delete discardPick[k];
     g.phase = 'setup1';
     g.current = g.setupOrder[0];
-    log('A new island. Place your settlement to begin (desert tile should render - version 2.0)'); setTimeout(() => log('Island rendering confirmed.'), 500);
+    log('A new island. Place your settlement to begin.');
     setHint('Place your settlement.');
     render();
   }
