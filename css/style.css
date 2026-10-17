@@ -164,6 +164,14 @@ body {
   accent-color: var(--gold);
   cursor: pointer;
 }
+#optmenu select {
+  min-width: 110px;
+  padding: 4px 7px;
+  color: var(--ink);
+  background: rgba(255, 255, 255, .1);
+  border: 1px solid var(--edge);
+  border-radius: 6px;
+}
 
 /* Empty containers (dev cards, hand) must not reserve space. */
 #hud-hand #devcards:empty,
