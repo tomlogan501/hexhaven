@@ -52,6 +52,14 @@ const round = [2, 3, 3, 4, 4, 5, 5, 6, 6, 8, 8, 9, 9, 10, 10, 11, 11, 12];
 check('tokens match the official multiset', tokens.join(',') === round.join(','),
   tokens.join(','));
 
+// Official harbor mix: 9 ports, 4 specific 2:1 + 5 generic 3:1.
+const ports = E.filter(e => e.port);
+const twoToOne = ports.filter(e => e.port.ratio === 2);
+const threeToOne = ports.filter(e => e.port.ratio === 3);
+check('9 harbors with official 4x2:1 + 5x3:1 mix',
+  ports.length === 9 && twoToOne.length === 4 && threeToOne.length === 5,
+  'ports=' + ports.length + ' 2:1=' + twoToOne.length + ' 3:1=' + threeToOne.length);
+
 // Every vertex must touch exactly 3 tiles, except outer-ring ones (2 or 1).
 const dist3 = V.filter(v => v.tiles.length === 3).length;
 check('some vertices touch 3 tiles', dist3 > 0, 'count=' + dist3);

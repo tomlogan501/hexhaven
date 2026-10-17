@@ -7,12 +7,12 @@ const MAPGEN = (() => {
   };
   const HARBOR_ICONS = { 2: '2:1', 3: '3:1' };
   const HARBOR_LABELS = { forest: '🌲', pasture: '🐑', field: '🌾', hill: '🧱', mount: '⛰', null: '?' };
+  // Official harbor mix: 4 specific 2:1 ports + 5 generic 3:1 ports.
   const HARBOR_TYPES = [
     { ratio: 2, res: 'forest' }, { ratio: 2, res: 'pasture' },
     { ratio: 2, res: 'field' },  { ratio: 2, res: 'hill' },
-    { ratio: 2, res: 'mount' },
     { ratio: 3, res: null }, { ratio: 3, res: null }, { ratio: 3, res: null },
-    { ratio: 3, res: null },
+    { ratio: 3, res: null }, { ratio: 3, res: null },
   ];
 
   function build(R) {
