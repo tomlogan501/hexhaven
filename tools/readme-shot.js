@@ -75,6 +75,17 @@ const sleep = (ms) => new Promise(r => setTimeout(r, ms));
   })()`);
   await sleep(400);
 
+  // Open the collapsible resource-graph window (bottom-right) so the debug
+  // run fills it with data; plot wood specifically.
+  await c.eval(`(function(){
+    const w = document.getElementById('hud-graph');
+    if (w) w.classList.remove('hidden');
+    const s = document.getElementById('graph-res');
+    if (s) { s.value = 'forest'; s.dispatchEvent(new Event('change')); }
+    return true;
+  })()`);
+  await sleep(300);
+
   // Start a fresh game, then let the debug auto-play build a real board.
   await c.eval(`(function(){ const n = document.getElementById('btn-new'); if (n) n.click(); return !!n; })()`);
   await sleep(1200);

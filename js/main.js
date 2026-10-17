@@ -300,8 +300,7 @@
         num: t.num === 0 ? I18N.t('desertr') : t.num,
       }));
     } else {
-      line(I18N.t('info_robber',
-        { res: '—', num: I18N.t('desertr') }));
+      line(I18N.t('info_robber_none'));
     }
     line(I18N.t('info_deck', { n: g.deck.length }));
   }
@@ -329,6 +328,9 @@
     if (g.winner && !winAnnounced) { winAnnounced = true; AUDIO.win(); }
     if (g.phase !== 'done') RULES.refreshScores(g);
     RENDER.draw(ctx, g, canvas.width, canvas.height, null, tool, 0, cam, { t: animT });
+    const graphEl = $('resgraph');
+    if (graphEl) GRAPH.draw(graphEl, g,
+      ($('graph-res') || {}).value || null);
     renderPlayers();
     renderHand();
     renderTradePanel();
@@ -705,6 +707,7 @@
     }
     if (RULES.checkWinner(g)) { render(); return; }
     const p = g.players[0];
+    GRAPH.turnSnapshot(g);
     p.hasRolled = false;
     p.devPlayedThisTurn = false;
     p.devBoughtThisTurn = [];
@@ -747,6 +750,7 @@
     p.builtThisTurn = 0;
     RULES.refreshScores(g);
     busy = false;
+    GRAPH.turnSnapshot(g);
     if (g.winner || g.phase === 'done') { render(); return; }
     g.robberFromSeven = false;
     g.current = (g.current + 1) % g.players.length;
@@ -949,6 +953,29 @@
       refreshDebugLabel();
       render();
     });
+  }
+
+  // Resource graph window: a debug-run companion — it auto-opens when the
+  // debug auto-play starts and stays out of the way otherwise. Collapsible
+  // with ▾, closed with ✕.
+  const graphMin = $('btn-graph-min');
+  if (graphMin) {
+    graphMin.addEventListener('click', () => {
+      const win = $('hud-graph');
+      if (win) win.classList.toggle('min');
+    });
+  }
+  const graphHide = $('btn-graph-hide');
+  if (graphHide) {
+    graphHide.addEventListener('click', () => {
+      const win = $('hud-graph');
+      if (win) { win.classList.add('hidden'); win.classList.remove('min'); }
+    });
+  }
+  // Which resource the graph plots (replots the whole history instantly).
+  const graphRes = $('graph-res');
+  if (graphRes) {
+    graphRes.addEventListener('change', render);
   }
 
   // Music / SFX toggles carry a translated state in their label.
@@ -1185,6 +1212,8 @@
     for (const k of Object.keys(discardPick)) delete discardPick[k];
     g.phase = 'setup1';
     g.current = g.setupOrder[0];
+    GRAPH.reset();
+    GRAPH.turnSnapshot(g);   // origin line: everyone starts on 0
     log('A new island. Place your settlement to begin.');
     setHint(I18N.t('h_first_settle'));
     render();
@@ -1283,6 +1312,10 @@
 
     startNewGame();
     busy = false;
+    // The graph window is part of the debug furniture: open it so the
+    // curves are visible while the game plays itself out.
+    const graphWin = $('hud-graph');
+    if (graphWin) { graphWin.classList.remove('hidden'); graphWin.classList.remove('min'); }
 
     try {
       // 1. Walk the snake setup order to completion.

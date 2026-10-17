@@ -99,6 +99,26 @@
       <button class="btn gear" id="btn-menu" title="Options">&#9881;</button>
     </section>
 
+    <!-- Resource graph (debug runs): a collapsible window over the board
+         showing, per resource (or the hand total), every player's stock
+         turn by turn. -->
+    <section class="hud hidden" id="hud-graph">
+      <div class="graphtop">
+        <h3 data-i18n="graph_title">Resources over turns</h3>
+        <select id="graph-res" title="Resource">
+          <option value="" selected data-i18n="graph_total">Total</option>
+          <option value="forest" data-i18n="res_forest">Wood</option>
+          <option value="pasture" data-i18n="res_pasture">Sheep</option>
+          <option value="field" data-i18n="res_field">Grain</option>
+          <option value="hill" data-i18n="res_hill">Brick</option>
+          <option value="mount" data-i18n="res_mount">Ore</option>
+        </select>
+        <button class="btn ghost" id="btn-graph-min" data-i18n-title="graph_min" title="Collapse">&#9662;</button>
+        <button class="btn ghost" id="btn-graph-hide" data-i18n-title="graph_hide" title="Hide">&#10005;</button>
+      </div>
+      <canvas id="resgraph"></canvas>
+    </section>
+
     <!-- Principal menu: a centred card over a dimmed backdrop, shown at
          boot and reopened with the floating gear. Title, play, rules &
          objectives, language and options in one place. -->
@@ -199,6 +219,7 @@ if (location.search.indexOf('camtrade') >= 0) {
 <script src="js/i18n.js"></script>
 <script src="js/map.js"></script>
 <script src="js/state.js"></script>
+<script src="js/graph.js"></script>
 <script src="js/rules.js"></script>
 <script src="js/render.js"></script>
 <script src="js/ai.js"></script>

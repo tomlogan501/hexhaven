@@ -18,6 +18,7 @@ const I18N = (() => {
 
       panel_players: 'Players', panel_log: 'Log', btn_log: 'Log',
       info_robber: 'Robber: {res} tile ({num})', desertr: 'desert',
+      info_robber_none: 'Robber: not placed yet',
       info_deck: 'Development cards left in deck: {n}',
 
       res_forest: 'Wood', res_pasture: 'Sheep', res_field: 'Grain',
@@ -86,6 +87,10 @@ const I18N = (() => {
       r_dev: 'Development cards (grain + ore + brick): one may be bought per turn, never played on the turn it is bought — except Victory Point cards, which count immediately but stay hidden.',
       r_trade: 'Player trades: offer any bundle to the AIs, who may accept or refuse.',
       r_end: 'The game ends as soon as a player shows 10 or more points.',
+      graph_title: 'Resources over turns',
+      graph_total: 'Total',
+      graph_min: 'Collapse / expand',
+      graph_hide: 'Hide',
     },
 
     fr: {
@@ -101,6 +106,7 @@ const I18N = (() => {
 
       panel_players: 'Joueurs', panel_log: 'Journal', btn_log: 'Journal',
       info_robber: 'Voleur : tuile {res} ({num})', desertr: 'désert',
+      info_robber_none: 'Voleur : pas encore placé',
       info_deck: 'Cartes développement restantes : {n}',
 
       res_forest: 'Bois', res_pasture: 'Mouton', res_field: 'Blé',
@@ -169,6 +175,10 @@ const I18N = (() => {
       r_dev: 'Cartes développement (blé + minerai + brique) : une achat par tour, jamais jouable le tour de l’achat — sauf les cartes Point de victoire, comptées immédiatement mais cachées.',
       r_trade: 'Échanges entre joueurs : proposez n’importe quel lot aux IA, qui peuvent accepter ou refuser.',
       r_end: 'La partie s’arrête dès qu’un joueur affiche 10 points ou plus.',
+      graph_title: 'Ressources au fil des tours',
+      graph_total: 'Toutes',
+      graph_min: 'Réduire / agrandir',
+      graph_hide: 'Masquer',
     },
 
     es: {
@@ -184,6 +194,7 @@ const I18N = (() => {
 
       panel_players: 'Jugadores', panel_log: 'Registro', btn_log: 'Registro',
       info_robber: 'Ladrón: casilla {res} ({num})', desertr: 'desierto',
+      info_robber_none: 'Ladrón: aún sin colocar',
       info_deck: 'Cartas de desarrollo en el mazo: {n}',
 
       res_forest: 'Madera', res_pasture: 'Oveja', res_field: 'Trigo',
@@ -253,6 +264,10 @@ const I18N = (() => {
       r_dev: 'Cartas de desarrollo (trigo + mineral + ladrillo): se puede comprar una por turno, nunca se juega en el turno de compra — salvo las de punto de victoria, que cuentan de inmediato pero permanecen ocultas.',
       r_trade: 'Intercambios entre jugadores: ofrece cualquier lote a las IA, que pueden aceptar o rechazar.',
       r_end: 'La partida termina en cuanto un jugador muestre 10 puntos o más.',
+      graph_title: 'Recursos a lo largo de los turnos',
+      graph_total: 'Todas',
+      graph_min: 'Plegar / desplegar',
+      graph_hide: 'Ocultar',
     },
 
     de: {
@@ -268,6 +283,7 @@ const I18N = (() => {
 
       panel_players: 'Spieler', panel_log: 'Protokoll', btn_log: 'Protokoll',
       info_robber: 'Räuber: Feld {res} ({num})', desertr: 'Wüste',
+      info_robber_none: 'Räuber: noch nicht versetzt',
       info_deck: 'Entwicklungskarten im Stapel: {n}',
 
       res_forest: 'Holz', res_pasture: 'Schaf', res_field: 'Getreide',
@@ -336,6 +352,10 @@ const I18N = (() => {
       r_dev: 'Entwicklungskarten (Getreide + Erz + Lehm): eine pro Zug kaufen, im Kaufzug nie ausspielen — Siegpunktkarten zählen sofort, bleiben aber verborgen.',
       r_trade: 'Handel unter Spielern: biete den KIs beliebige Bündel an, die annehmen oder ablehnen können.',
       r_end: 'Das Spiel endet, sobald ein Spieler 10 oder mehr Punkte vorzeigt.',
+      graph_title: 'Rohstoffe im Zugverlauf',
+      graph_total: 'Alle',
+      graph_min: 'Ein-/Ausklappen',
+      graph_hide: 'Ausblenden',
     },
   };
 
