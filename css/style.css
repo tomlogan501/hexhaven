@@ -262,6 +262,15 @@ body {
   border-radius: 6px;
 }
 
+/* Native dropdown popups open on the OS default (white) background while
+   the page text is light — force dark text inside the option list so it
+   stays readable (also applies to the AI/island selects). */
+select option,
+select optgroup {
+  color: #14181e;
+  background-color: #f4f1e8;
+}
+
 /* Empty containers (dev cards, hand) must not reserve space. */
 #hud-hand #devcards:empty,
 #hud-hand .chips:empty { display: none; }
