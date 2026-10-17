@@ -18,12 +18,15 @@ const STATE = (() => {
     monopoly:   { count: 2,  label: 'Monopoly',     vp: 0 },
   };
 
-  // Official harbor mix: 4 specific 2:1 ports + 5 generic 3:1 ports.
+  // Official mix: 5 specific 2:1 ports — one per resource type (rulebook:
+  // "only 1 special harbor for each type of resource") — plus 4 generic
+  // 3:1 ports.
   const HARBOR_TYPES = [
     { ratio: 2, res: 'forest' }, { ratio: 2, res: 'pasture' },
     { ratio: 2, res: 'field' },  { ratio: 2, res: 'hill' },
+    { ratio: 2, res: 'mount' },
     { ratio: 3, res: null }, { ratio: 3, res: null }, { ratio: 3, res: null },
-    { ratio: 3, res: null }, { ratio: 3, res: null },
+    { ratio: 3, res: null },
   ];
 
   function emptyHand() {

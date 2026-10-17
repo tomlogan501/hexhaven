@@ -62,9 +62,14 @@ All notable changes to Hex Haven. Official-rules fixes reference the rules in
   players panel (must be done before ending the turn); the AI steals from the
   richest candidate.
 
-### Fixed — Harbor mix (397b947, §1)
-- Official mix of **4 specific 2:1 ports + 5 generic 3:1 ports** (was 5 + 4);
-  asserted by `tools/check.js` on every run.
+### Fixed — Harbor mix (397b947, then corrected — §1)
+- Official mix: **5 specific 2:1 ports — one per resource type (rulebook:
+  "there is only 1 special harbor for each type of resource") — plus 4 generic
+  3:1 ports**; asserted by `tools/check.js`. (This entry initially shipped
+  inverted as 4 specific + 5 generic; the rulebook quote settles it and the
+  original ratio was restored.)
+- Exchange **rates** are official and unchanged: bank **4:1**, generic harbor
+  **3:1**, matching specific harbor **2:1** (`tradeRateFor`).
 
 ### Fixed — AI player name typo (92049f1)
 - The third default player was named "Tomas"; now "Thomas" (`js/state.js`),

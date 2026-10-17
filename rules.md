@@ -21,8 +21,10 @@ harbors: 4 specific 2:1 + 5 generic 3:1 = 9 ports).
 Implementation `js/map.js`:
 - `assignTiles` uses exactly the official resource counts: `desert 1, forest 4,
   pasture 4, field 4, hill 3, mount 3` (line 148).
-- Harbors: `STATE.HARBOR_TYPES` = 4 specific 2:1 + 5 generic 3:1 = **9 ports** ✅
-  (official mix, fixed 2026-10-17).
+- Harbors: `STATE.HARBOR_TYPES` = 5 specific 2:1 (**one per resource type**,
+  rulebook: "there is only 1 special harbor for each type of resource") +
+  4 generic 3:1 = **9 ports** ✅ (corrected 2026-10-17 — an earlier fix had
+  inverted the mix).
 
 ### Number tokens ⚠️ BUG (2026-10-17)
 
@@ -227,5 +229,5 @@ settlements 1, cities 2, VP cards 1 each, longest ≥ 5 = +2, army ≥ 3 = +2 �
 6. 🚧 Road Building: grant 2 free roads.
 7. ✅ No same-turn dev card restriction / one-dev-card-per-turn cap.
 8. ✅ Victory Point scoring: revealed VP cards bank a permanent point (`vpRevealed`).
-9. ✅ Harbor types: official mix of 4 specific 2:1 + 5 generic 3:1.
+9. ✅ Harbor types: rulebook mix — **one 2:1 special harbor per resource type** (5) + 4 generic 3:1.
 10. ✅ Robber steal: single theft, victim chosen by the mover (AI: richest; human: click the row).
