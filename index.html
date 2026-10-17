@@ -67,8 +67,12 @@
       <!-- Player-to-player trade panel, shown centred over the board while
            an offer is being composed. -->
       <section class="hud hidden" id="tradepanel">
-        <h3 data-i18n="tp_title">Trade with players</h3>
-        <p class="hint" id="tradehint" data-i18n="tp_hint">Click chips to set quantities.</p>
+        <div class="chips tptabs">
+          <button class="btn ghost active" id="tab-players" data-i18n="tp_tab_players">Players</button>
+          <button class="btn ghost" id="tab-bank" data-i18n="tp_tab_bank">Bank &amp; harbors</button>
+        </div>
+        <h3 id="trade-title">Trade with players</h3>
+        <p class="hint" id="tradehint">Click chips to set quantities.</p>
         <div class="traderow"><span class="tradelabel" data-i18n="tp_give">You give</span>
           <div id="trade-give" class="chips"></div>
         </div>

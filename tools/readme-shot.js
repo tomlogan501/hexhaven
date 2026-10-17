@@ -121,6 +121,42 @@ const sleep = (ms) => new Promise(r => setTimeout(r, ms));
   await c.eval('(function(){ const b = document.getElementById("btn-rules-ok"); if (b) b.click(); return true; })()');
   await sleep(300);
 
+  // Bank & harbour exchange tab of the trade panel. Open it through the
+  // screenshot hook: during the debug run the human build phase (the only
+  // phase where the Trade button is enabled) lasts just milliseconds.
+  await c.eval(`(function(){
+    const o = document.getElementById('optoverlay');
+    if (o) o.classList.remove('open');
+    const h = window.__hexhavenShot;
+    if (h) h.openTradePanel();
+    return !!h;
+  })()`);
+  await sleep(600);
+  await c.eval('(function(){ const o = document.getElementById("optoverlay"); if (o) o.classList.remove("open"); return true; })()');
+  await sleep(200);
+  await sleep(1500);
+  await c.eval(`(function(){
+    const t = document.getElementById('btn-trade');
+    if (t) t.click();
+    return true;
+  })()`);
+  await sleep(400);
+  await c.eval('(function(){ const t = document.getElementById("tab-bank"); if (t) t.click(); return true; })()');
+  await sleep(300);
+  await c.eval(`(function(){
+    const give = document.querySelector('#trade-give .res[data-res=forest]');
+    if (give) give.click();
+    const want = document.querySelector('#trade-want .res[data-res=mount]');
+    if (want) want.click();
+    return true;
+  })()`);
+  await sleep(300);
+  fs.writeFileSync('docs/trade-bank.tmp.png',
+    Buffer.from((await c.send('Page.captureScreenshot', { format: 'png' })).data, 'base64'));
+  // Back to the player-trade tab + a clean state for the language shots.
+  await c.eval('(function(){ const t = document.getElementById("tab-players"); if (t) t.click(); const x = document.getElementById("btn-trade-clear"); if (x) x.click(); return true; })()');
+  await sleep(200);
+
   // Switch the menu to French, capture, then restore English.
   await c.eval(`(function(){
     const s = document.getElementById('lang');

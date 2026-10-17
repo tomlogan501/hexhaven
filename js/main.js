@@ -26,6 +26,7 @@
   let setupIdx = 0;       // cursor into g.setupOrder
   let discardNeed = 0;    // cards the human must still discard
   let trade = null;       // open trade panel: { give: {}, want: {} }
+  let tradeMode = 'players'; // 'players' | 'bank'
   const discardPick = {}; // res -> count chosen so far
   let debugRunning = false; // a full-game debug run is in progress
 
@@ -181,17 +182,43 @@
     };
     buildRow('trade-give', trade.give);
     buildRow('trade-want', trade.want);
-    const hint = $('tradehint');
-    if (hint) {
-      hint.textContent = I18N.t('tp_offerpart', {
-        g: bundleText(trade.give) || I18N.t('tp_nothing'),
-        w: bundleText(trade.want) || I18N.t('tp_nothing'),
-      });
+    const panelEl = $('tradepanel');
+    if (panelEl) panelEl.classList.toggle('bank', tradeMode === 'bank');
+    const tabs = [['tab-players', 'players'], ['tab-bank', 'bank']];
+    for (const [id, mode] of tabs) {
+      const b = $(id);
+      if (b) b.classList.toggle('active', tradeMode === mode);
     }
+    const title = $('trade-title');
+    if (title) {
+      title.textContent = tradeMode === 'bank'
+        ? I18N.t('tp_bank_title') : I18N.t('tp_title');
+    }
+    const hint = $('tradehint');
+    if (!hint) return;
+    if (tradeMode === 'bank') {
+      const giveSel = Object.entries(trade.give).find(([, n]) => n > 0);
+      const wantSel = Object.entries(trade.want).find(([, n]) => n > 0);
+      if (giveSel && wantSel) {
+        hint.textContent = I18N.t('tp_bank_plan', {
+          g: giveSel[1] + ' ' + I18N.res(giveSel[0]),
+          r: RULES.tradeRateFor(g, 0, giveSel[0]),
+          w: I18N.res(wantSel[0]),
+        });
+      } else {
+        hint.textContent = I18N.t('tp_bank_hint0');
+      }
+      return;
+    }
+    hint.textContent = I18N.t('tp_offerpart', {
+      g: bundleText(trade.give) || I18N.t('tp_nothing'),
+      w: bundleText(trade.want) || I18N.t('tp_nothing'),
+    });
   }
 
   function proposeTrade() {
     if (!trade) return;
+    if (tradeMode === 'bank') { doMaritimeTrade(); return; }
     const gives = {}, wants = {};
     for (const [res, n] of Object.entries(trade.give)) if (n > 0) gives[res] = n;
     for (const [res, n] of Object.entries(trade.want)) if (n > 0) wants[res] = n;
@@ -214,6 +241,37 @@
       log(`${p.name} declined ${txt(gives)} for ${txt(wants)}.`);
     }
     setHint(I18N.t('h_reject'));
+    render();
+  }
+
+  // Bank / harbour exchange for the human player: give one resource at the
+  // player's best applicable rate, take exactly one other resource.
+  function doMaritimeTrade() {
+    if (!trade) return;
+    const giveSel = Object.entries(trade.give).find(([, n]) => n > 0);
+    const wantSel = Object.entries(trade.want).find(([, n]) => n > 0);
+    if (!giveSel || !wantSel || giveSel[0] === wantSel[0]) {
+      setHint(I18N.t('tp_bank_pick'));
+      return;
+    }
+    const [giveRes, giveN] = giveSel;
+    const wantRes = wantSel[0];
+    const rate = RULES.tradeRateFor(g, 0, giveRes);
+    if (giveN < rate || g.players[0].hand[giveRes] < rate) {
+      setHint(I18N.t('tp_bank_need',
+        { r: rate, n: rate, res: I18N.res(giveRes) }));
+      return;
+    }
+    const ok = rate >= 4
+      ? RULES.bankTrade(g, 0, giveRes, rate, wantRes)
+      : RULES.harborTrade(g, 0, giveRes, rate, wantRes);
+    if (!ok) {
+      setHint(I18N.t('tp_bank_need',
+        { r: rate, n: rate, res: I18N.res(giveRes) }));
+      return;
+    }
+    AUDIO.build();
+    trade = null;
     render();
   }
 
@@ -1139,6 +1197,18 @@
     });
   }
 
+  // Headless screenshot hook (tools/readme-shot.js only): opens the trade
+  // panel without the click-path gating, because during a debug auto-play
+  // the human build phase only exists for a few milliseconds.
+  if (typeof window !== 'undefined') {
+    window.__hexhavenShot = {
+      openTradePanel() {
+        trade = { give: {}, want: {} };
+        render();
+      },
+    };
+  }
+
   const tradePanelEl = $('tradepanel');
   if (tradePanelEl) {
     // Chips cycle their count on click: give is capped by your hand, get
@@ -1151,6 +1221,9 @@
       if (chip.parentElement.id === 'trade-give') {
         const max = g.players[0].hand[res];
         trade.give[res] = ((trade.give[res] || 0) + 1) % (max + 1);
+      } else if (tradeMode === 'bank') {
+        // A bank exchange takes exactly one wanted card: single-pick row.
+        trade.want = trade.want[res] ? {} : { [res]: 1 };
       } else {
         trade.want[res] = ((trade.want[res] || 0) + 1) % 5;
       }
@@ -1158,6 +1231,22 @@
     });
     const offerBtn = $('btn-offer');
     if (offerBtn) offerBtn.addEventListener('click', proposeTrade);
+    // Trade-panel mode tabs: player trades vs. bank/harbour exchange.
+    const tabPlayers = $('tab-players');
+    if (tabPlayers) {
+      tabPlayers.addEventListener('click', () => {
+        tradeMode = 'players';
+        renderTradePanel();
+      });
+    }
+    const tabBank = $('tab-bank');
+    if (tabBank) {
+      tabBank.addEventListener('click', () => {
+        tradeMode = 'bank';
+        trade.want = {};  // reset single-pick position when switching
+        renderTradePanel();
+      });
+    }
     const clearBtn = $('btn-trade-clear');
     if (clearBtn) {
       clearBtn.addEventListener('click', () => {

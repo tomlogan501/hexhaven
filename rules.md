@@ -196,9 +196,12 @@ null ✅.
 
 - **Bank 4:1** — hand 4 identical resources to the bank for 1 of another
   (`RULES.bankTrade`, rules.js:313-322) ✅.
-- **Harbors (ports)** — 2:1 for the named resource, generic 3:1 for anything, based
-  on owning a settlement/city on a port edge (`harborsOf`, `tradeRateFor`,
-  `bestHarborTrade`, `harborTrade` — rules.js:256-310; 3:1 < 2:1 preference ✅).
+- **Harbors (ports)** — 2:1 for the named resource (you trade 2 of the harbor's
+  resource for 1 of any other), generic 3:1 for anything, based on owning a
+  settlement/city on a port edge (`harborsOf`, `tradeRateFor`, `bestHarborTrade`,
+  `harborTrade` — rates are resolved against the resource you GIVE ✅, fixed
+  2026-10-17: the rate was previously matched against the wanted resource, which
+  let a 2:1 harbor serve the wrong resource).
 - **Player-to-player** — only between the rolling player and the others in the
   official rules; here `RULES.partnerTrade` (rules.js:328-343) validates both hands
   and moves both bundles atomically ✅. ⚠️ AI-vs-AI trades (`AI.tradeWithAI`) run at

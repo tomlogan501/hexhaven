@@ -491,6 +491,10 @@ select optgroup {
   z-index: 14;
 }
 #tradepanel.hidden { display: none; }
+#tradepanel .tptabs { margin-bottom: 2px; gap: 6px; }
+/* Undo the hand-bar ghost look (#hud-hand .btn.ghost) for the tab row. */
+#tradepanel .tptabs .btn { opacity: 1; background: rgba(255, 255, 255, .05); }
+#tradepanel .tptabs .btn.active { background: var(--gold); color: #17212c; }
 .traderow { display: flex; align-items: center; gap: 10px; }
 .tradelabel {
   flex: none;

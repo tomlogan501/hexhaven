@@ -384,38 +384,43 @@ const RULES = (() => {
     return out;
   }
 
-  // Best exchange rate this player can use for a given resource.
-  // 3 (generic harbor) beats 2 (specific) beats 4 (bank).
-  function tradeRateFor(g, pid, wantRes) {
+  // Best rate allowed for trading AWAY giveRes. A specific 2:1 harbour
+  // only serves its own resource; the 3:1 harbour serves everything;
+  // anything else is the bank's 4:1.
+  function tradeRateFor(g, pid, giveRes) {
     let best = 4;
     for (const h of harborsOf(g, pid)) {
-      if (h.res && h.res !== wantRes) continue;   // wrong resource
-      if (h.ratio < best) best = h.ratio;
+      if (h.ratio >= best) continue;
+      if (h.ratio === 3 || h.res === giveRes) best = h.ratio;
     }
     return best;
   }
 
   function bestHarborTrade(g, pid, want) {
     const p = g.players[pid];
-    const rate = tradeRateFor(g, pid, want);
-    if (rate >= 4) return null;
-    // Dump the resource we hold most of, never the one we want.
-    let give = null, giveCount = -1;
+    // Cheapest applicable rate first, then the biggest pile to dump.
+    let plan = null;
     for (const res of Object.keys(STATE.RES)) {
       if (res === want) continue;
+      const rate = tradeRateFor(g, pid, res);
+      if (rate >= 4) continue;
       const have = p.hand[res];
       if (have < rate) continue;
-      if (have > giveCount) { giveCount = have; give = res; }
+      if (!plan || rate < plan.rate ||
+          (rate === plan.rate && have > p.hand[plan.give])) {
+        plan = { give: res, n: rate, want, rate };
+      }
     }
-    if (give === null) return null;
-    return { give, n: rate, want, rate };
+    return plan;
   }
 
   function harborTrade(g, pid, giveRes, n, wantRes) {
     const p = g.players[pid];
     if (giveRes === wantRes) return false;
-    // Only allow the rate the player actually controls.
-    if (n < tradeRateFor(g, pid, wantRes)) return false;
+    // Only allow the rate the player actually controls — matched against
+    // the resource being GIVEN (official: the 2:1 harbour of a resource
+    // trades 2 of that resource for 1 of any other).
+    if (n !== tradeRateFor(g, pid, giveRes)) return false;
     if (p.hand[giveRes] < n) return false;
     p.hand[giveRes] -= n;
     STATE.payout(g, p, wantRes, 1);
@@ -497,9 +502,11 @@ const RULES = (() => {
         // Prefer a harbor rate; fall back to the bank.
         const plan = bestHarborTrade(g, pid, w) || planBankTrade(g, pid, w);
         if (!plan) continue;
-        const ok = plan.rate
-          ? harborTrade(g, pid, plan.give, plan.n, plan.want)
-          : bankTrade(g, pid, plan.give, plan.n, plan.want);
+        // plan.rate is set for harbour trades (the matched rate); the bank
+        // plan has no rate — always 4:1.
+        const ok = plan.rate === undefined
+          ? bankTrade(g, pid, plan.give, plan.n, plan.want)
+          : harborTrade(g, pid, plan.give, plan.n, plan.want);
         if (ok) { traded = true; break; }
       }
     }

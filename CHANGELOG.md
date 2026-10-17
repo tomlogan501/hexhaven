@@ -3,6 +3,26 @@
 All notable changes to Hex Haven. Official-rules fixes reference the rules in
 `rules.md` (§ = section there).
 
+## 2026-10-17 — Harbor trade fix + bank exchange UI
+
+### Fixed — 2:1 harbor matched the wrong resource (§9)
+- `tradeRateFor` resolved the harbor rate against the **wanted** resource, so a
+  2:1 forest harbor e.g. served *non-forest* trades. Officially a 2:1 port
+  trades 2 of **its own** resource for 1 of any other — the rate is now
+  resolved against the resource you **give** (`js/rules.js`).
+- `harborTrade` now rejects any `n` other than the player's real rate for the
+  given resource; `bestHarborTrade` picks the cheapest applicable rate first,
+  then the biggest pile to dump.
+- `rules.md` §9 updated.
+
+### Added — Human bank/harbor exchange UI (§9)
+- The trade panel (bottom bar) now has two tabs: **Players** and **Bank &
+  harbors**. The bank tab lists the same give/get chips: pick one resource to
+  give, one to take, and Trade executes a 4:1 bank trade or a 2:1/3:1 harbor
+  trade at the player's best rate — previously only the AI could use
+  `harborTrade`/`bankTrade` (`js/main.js`, `index.html`, `css/style.css`).
+- New i18n keys (en/fr/es/de) for the tabs, plan hint, and not-enough message.
+
 ## 2026-10-17 — Official-rules alignment (one fix per branch, merged to master)
 
 ### Fixed — Longest Road (bab5c8f, §8)
@@ -70,7 +90,6 @@ All notable changes to Hex Haven. Official-rules fixes reference the rules in
   original ratio was restored.)
 - Exchange **rates** are official and unchanged: bank **4:1**, generic harbor
   **3:1**, matching specific harbor **2:1** (`tradeRateFor`).
-
 ### Fixed — AI player name typo (92049f1)
 - The third default player was named "Tomas"; now "Thomas" (`js/state.js`),
   with the AI-trade log assertions updated accordingly.
