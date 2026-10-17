@@ -270,6 +270,14 @@ body {
 
 .res .dot { width: 14px; height: 14px; border-radius: 50%; border: 1px solid rgba(0, 0, 0, .45); flex: none; }
 
+/* Robber steal: clickable victim rows in the players panel. */
+.player.steal-target {
+  cursor: pointer;
+  outline: 2px dashed var(--gold);
+  background: rgba(224, 168, 60, .12);
+}
+.player.steal-target:hover { background: rgba(224, 168, 60, .22); }
+
 .player {
   display: flex;
   align-items: center;

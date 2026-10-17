@@ -438,6 +438,30 @@ check('longest road counts the single segment', g.longest.length === 1,
     refused === false && e3.built === null);
 }
 
+// ---- robber: exactly one steal, from one chosen victim with cards
+{
+  const gS = ctx.STATE.newGame(3, 2);
+  // Park an island tile under the robber.
+  const tile = gS.map.tiles.find(t => t.res !== 'desert');
+  const tk = ctx.HEX.key(tile.q, tile.r);
+  ctx.RULES.moveRobber(gS, tk);
+  // Two AI settlements (with cards) + one AI without cards, all adjacent.
+  const adj = gS.map.vertices.filter(v =>
+    v.owner === null && v.tiles.includes(tk));
+  gS.players[1].settlements.push(adj[0].id);
+  gS.players[2].settlements.push(adj[1].id);
+  gS.players[2].hand.pasture = 2;
+  check('mover excluded, empty-handed victims excluded',
+    ctx.RULES.stealCandidates(gS, 0).join(',') === '2',
+    ctx.RULES.stealCandidates(gS, 0).join(','));
+  gS.players[1].hand.forest = 3;
+  const cands = ctx.RULES.stealCandidates(gS, 0);
+  // One steal must take exactly one card from the chosen victim only.
+  ctx.RULES.stealFromPlayer(gS, 0, cands[0]);
+  check('a single steal moves exactly one card',
+    Object.values(gS.players[0].hand).reduce((a, b) => a + b, 0) === 1);
+}
+
 // ---- resources: paying more than you hold must be refused
 {
   const g4 = ctx.STATE.newGame(2, 2);

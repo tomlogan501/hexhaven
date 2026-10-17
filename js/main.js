@@ -90,6 +90,21 @@
     parent.appendChild(b);
   }
 
+  // Robber steal: exactly ONE card from ONE victim chosen by the mover
+  // (official rule). With several candidates the human clicks a player row.
+  let pendingStealVictims = null;
+  function finishRobber() {
+    pendingStealVictims = null;
+    g.robberFromSeven = false;
+    g.phase = 'build';
+    render();
+  }
+
+  function takeStolenCard(victimId) {
+    RULES.stealFromPlayer(g, 0, victimId);
+    finishRobber();
+  }
+
   function renderPlayers() {
     const el = $('players');
     if (!el) return;
@@ -97,6 +112,10 @@
     for (const p of g.players) {
       const row = document.createElement('div');
       row.className = 'player' + (p.id === g.current ? ' active' : '');
+      if (pendingStealVictims && pendingStealVictims.includes(p.id)) {
+        row.classList.add('steal-target');
+        row.addEventListener('click', () => takeStolenCard(p.id));
+      }
 
       const sw = document.createElement('span');
       sw.className = 'swatch';
@@ -386,15 +405,25 @@
     if (tileKey !== g.robber) {
       RULES.moveRobber(g, tileKey);
       AUDIO.robber();
-      for (const victimId of RULES.playersAffectedByRobber(g)) {
-        if (victimId !== 0) RULES.stealFromPlayer(g, 0, victimId);
+      const candidates = RULES.stealCandidates(g, 0);
+      if (candidates.length === 1) {
+        RULES.stealFromPlayer(g, 0, candidates[0]);
+        finishRobber();
+        return;
       }
-    } else {
-      setHint('Robber stayed where it was.');
+      if (candidates.length > 1) {
+        // Official: the mover chooses the victim among the affected.
+        pendingStealVictims = candidates;
+        g.phase = 'robber';
+        setHint('You may take 1 card: click a player in the panel.');
+        render();
+        return;
+      }
+      finishRobber();
+      return;
     }
-    g.robberFromSeven = false;
-    g.phase = 'build';
-    render();
+    setHint('Robber stayed where it was.');
+    finishRobber();
   }
 
   // ---- dice for the human
@@ -657,6 +686,10 @@
     }
     if (g.robberFromSeven) {
       setHint('Move the robber before ending your turn.');
+      return;
+    }
+    if (pendingStealVictims) {
+      setHint('Take a card first: click a player in the panel.');
       return;
     }
     if (RULES.checkWinner(g)) { render(); return; }

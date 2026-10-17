@@ -154,6 +154,13 @@ const RULES = (() => {
     return [...affected];
   }
 
+  // Official: the mover steals exactly ONE card from ONE victim the mover
+  // chooses among the players adjacent to the robber tile holding >= 1 card.
+  function stealCandidates(g, moverPid) {
+    return playersAffectedByRobber(g)
+      .filter(id => id !== moverPid && STATE.totalCards(g.players[id]) > 0);
+  }
+
   // ---- development cards
   function buyDevCard(g, pid) {
     const p = g.players[pid];
@@ -518,6 +525,7 @@ const RULES = (() => {
     updateLongestRoad, scoreOf, refreshScores, checkWinner,
     // robber
     canMoveRobber, moveRobber, stealFromPlayer, playersAffectedByRobber,
+    stealCandidates,
     // dev cards
     buyDevCard, playDevCard,
     // largest army

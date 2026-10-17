@@ -113,9 +113,10 @@ Implementation: `RULES.canMoveRobber` (any tile except current, rules.js:87-91),
 `discardPick` UI. The Knight flow reuses the same path with `g.robberFromSeven`
 (rules.js:153, main.js:342, 379, 395).
 
-Deviation: `stealFromPlayer` picks the victim externally; the AI/steal path is
-random where the official rules let the mover choose. Acceptable for AI-only
-steals; note for future UI work.
+✅ (fixed 2026-10-17) **Mover's single steal**: exactly ONE card from ONE victim
+the mover chooses (`stealCandidates` filters affected players holding ≥ 1 card,
+excluding the mover). Humans click the highlighted victim row in the players
+panel when several qualify; the AI steals from the richest candidate.
 
 ---
 
@@ -152,7 +153,8 @@ Official deck (25): Knight ×14, VP ×5, Road Building ×2, Year of Plenty ×2,
 Monopoly ×2 — matches `STATE.DEV_CARDS` (state.js:13-19) ✅.
 
 - **Knight** — move the robber + steal; counting toward Largest Army.
-  Implemented in `playDevCard` (rules.js:149-153) ✅.
+  Implemented in `playDevCard` (rules.js:149-153) ✅. Steal is the official
+  single theft with mover's choice (see §5).
 - **Victory Point** — hidden +1 VP, counts in `scoreOf` (rules.js:237-239) ✅.
 - **Road Building** ✅ (fixed 2026-10-17) — grants **2 free roads** on the
   player's turn (`freeRoads` credits spent by `buildRoad`; a road otherwise
@@ -226,4 +228,4 @@ settlements 1, cities 2, VP cards 1 each, longest ≥ 5 = +2, army ≥ 3 = +2 �
 7. ✅ No same-turn dev card restriction / one-dev-card-per-turn cap.
 8. ✅ Victory Point scoring: revealed VP cards bank a permanent point (`vpRevealed`).
 9. ℹ️ Harbor types: 4 specific + 5 generic officially, here 5 + 4.
-10. ℹ️ Robber steal: mover-facing choice; currently random where applicable.
+10. ✅ Robber steal: single theft, victim chosen by the mover (AI: richest; human: click the row).

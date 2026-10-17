@@ -112,10 +112,13 @@ const AI = (() => {
     }
     if (best) {
       RULES.moveRobber(g, best);
-      // Steal from affected opponents
-      const affected = RULES.playersAffectedByRobber(g);
-      for (const oppId of affected) {
-        if (oppId !== pid) RULES.stealFromPlayer(g, pid, oppId);
+      // Official: ONE card from ONE victim — the mover chooses; the AI picks
+      // the richest candidate.
+      const affected = RULES.stealCandidates(g, pid);
+      if (affected.length > 0) {
+        const target = affected.reduce((a, b) =>
+          STATE.totalCards(g.players[b]) > STATE.totalCards(g.players[a]) ? b : a);
+        RULES.stealFromPlayer(g, pid, target);
       }
     }
     g.robberFromSeven = false;
