@@ -103,7 +103,12 @@ body {
   padding: 8px 11px;
   max-width: 210px;
 }
-#hud-res .chips { flex-wrap: wrap; gap: 4px; justify-content: flex-start; }
+#hud-res .chips {
+  display: flex;
+  flex-direction: column;   /* one resource per row: everything lines up */
+  align-items: stretch;
+  gap: 3px;
+}
 
 /* Build tools + dice + hints stay centred along the bottom edge. */
 #hud-hand {
