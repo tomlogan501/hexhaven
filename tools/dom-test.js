@@ -94,7 +94,7 @@ function mk(id, tag) { const e = new El(id, tag); byId.set(id, e); return e; }
 
 const IDS = [
   'board', 'status', 'players', 'hand', 'buildhint', 'buildbar',
-  'btn-roll', 'btn-pass', 'btn-music', 'btn-new', 'btn-debug',
+  'btn-roll', 'btn-pass', 'btn-music', 'btn-sfx', 'btn-new', 'btn-debug',
   'btn-dev', 'devcards', 'devhint', 'discardpanel', 'discarthint',
   'boardinfo', 'rollresult', 'log',
 ];
@@ -137,8 +137,10 @@ let lastTimer = 0;
 function FakeParam() {
   return {
     value: 1,
-    cancelScheduledValues() {}, setValueAtTime() {},
-    linearRampToValueAtTime() {}, exponentialRampToValueAtTime() {},
+    cancelScheduledValues() {},
+    setValueAtTime(v) { this.value = v; },
+    linearRampToValueAtTime(v) { this.value = v; },
+    exponentialRampToValueAtTime(v) { this.value = v; },
   };
 }
 function FakeNode() {
@@ -153,7 +155,9 @@ class FakeAudioContext {
   constructor() { this.state = 'running'; this.currentTime = 0; this.sampleRate = 44100; this.destination = FakeNode(); }
   resume() { this.state = 'running'; return Promise.resolve(); }
   createGain() { return FakeNode(); }
+  createDelay() { const node = FakeNode(); node.delayTime = new FakeParam(); return node; }
   createOscillator() { return FakeNode(); }
+  createStereoPanner() { const node = FakeNode(); node.pan = new FakeParam(); return node; }
   createBiquadFilter() { return FakeNode(); }
   createBufferSource() { return FakeNode(); }
   createBuffer(ch, len) { return { getChannelData: () => new Float32Array(len) }; }
@@ -187,6 +191,7 @@ const ctxObj = {
   clearTimeout: () => {},
   setInterval: (fn, ms) => { intervals.push(fn); return intervals.length; },
   clearInterval: () => {},
+  requestAnimationFrame: () => 0,
   AudioContext: FakeAudioContext,
   webkitAudioContext: FakeAudioContext,
   MouseEvent: class {
@@ -491,12 +496,22 @@ async function sweep(want, step = 6) {
     $('btn-music').textContent);
   $('btn-music').click();
 
+  $('btn-sfx').click();
+  check('SFX toggle updates label to off and disables effects',
+    /SFX: off/.test($('btn-sfx').textContent) && !ctxObj.AUDIO.isSfxOn(),
+    $('btn-sfx').textContent);
+  $('btn-sfx').click();
+  check('SFX toggle restores sound effects',
+    /SFX: on/.test($('btn-sfx').textContent) && ctxObj.AUDIO.isSfxOn(),
+    $('btn-sfx').textContent);
+
   $('btn-new').click();
   await sleep(20);
   check('new game resets to setup1',
     /place a settlement/i.test($('status').textContent), $('status').textContent);
   check('new game resets the hand to empty',
-    /No cards yet/.test($('hand').textContent), $('hand').textContent);
+    ['forest', 'pasture', 'field', 'hill', 'mount'].every(res =>
+      LIVE().players[0].hand[res] === 0), $('hand').textContent);
 
   // ---- Debug: auto-play button (runs the real click path end to end)
   // main.js's debug run plays toward a 10 VP win, which is far longer than
