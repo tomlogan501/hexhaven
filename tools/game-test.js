@@ -371,6 +371,33 @@ check('longest road counts the single segment', g.longest.length === 1,
     gY.players[0].devCards.length === 0 && gY.players[1].devCards.length === 0);
 }
 
+// ---- Monopoly: one chosen resource, all cards of that type
+{
+  const gM = ctx.STATE.newGame(3, 2);
+  const p = gM.players[0];
+  p.devCards.push('monopoly');
+  p.devBoughtThisTurn = [];
+  gM.players[1].hand.forest = 2;
+  gM.players[2].hand.forest = 3;
+  ctx.RULES.playDevCard(gM, p.id, 'monopoly', 'forest');
+  check('Monopoly takes ALL cards of the chosen type',
+    p.hand.forest === 5 &&
+    gM.players[1].hand.forest === 0 && gM.players[2].hand.forest === 0,
+    p.hand.forest);
+  // Only the named type is taken.
+  check('Monopoly leaves other resources alone',
+    gM.players[1].hand.pasture === 0 && gM.players[2].hand.mount === 0);
+  // Default target: the type the opponents hold most of.
+  p.devCards.push('monopoly');
+  p.devBoughtThisTurn = [];
+  p.devPlayedThisTurn = false;   // a later turn: the one-per-turn cap lifted
+  gM.players[1].hand.pasture = 4;
+  gM.players[2].hand.pasture = 2;
+  ctx.RULES.playDevCard(gM, p.id, 'monopoly');
+  check('Monopoly defaults to the opponents richest type',
+    p.hand.pasture === 6, p.hand.pasture);
+}
+
 // ---- resources: paying more than you hold must be refused
 {
   const g4 = ctx.STATE.newGame(2, 2);

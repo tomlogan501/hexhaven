@@ -160,10 +160,10 @@ Monopoly ×2 — matches `STATE.DEV_CARDS` (state.js:13-19) ✅.
 - **Year of Plenty** ✅ (fixed 2026-10-17) — take **any 2 resource cards from
   the bank**: `playDevCard(..., 'yearPlenty', [resA, resB])`; without a target
   the two scarcest needed resources are taken; no dev cards are drawn.
-- **Monopoly** ⚠️ — official: name **one** resource type and take **all** cards of
-  that type from every other player. Ours takes **1 of each** type from every
-  opponent (rules.js:159-171) — deviations from both "one type chosen by the
-  player" and "all cards of that type".
+- **Monopoly** ✅ (fixed 2026-10-17) — name **one** resource type and take
+  **all** cards of that type from every other player
+  (`playDevCard(..., 'monopoly', res)`; the most plentiful type in the
+  opponents' hands when no target is given).
 
 Buying: `RULES.buyDevCard` (rules.js:131-140) pays, pops the deck; empty deck →
 null ✅.

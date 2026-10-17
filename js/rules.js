@@ -197,16 +197,28 @@ const RULES = (() => {
       }
       STATE.addLog(g, `${p.name} played Year of Plenty.`);
     } else if (cardType === 'monopoly') {
-      // Steal one of each resource type from all opponents
-      for (const other of g.players) {
-        if (other.id === pid) continue;
-        for (const res of Object.keys(STATE.RES)) {
-          if (other.hand[res] > 0) {
-            other.hand[res] -= 1;
-            STATE.payout(g, p, res, 1);
-            break;
+      // Official: name ONE resource type and take ALL cards of that type from
+      // every other player. `target` names the type; without one the most
+      // plentiful type in the opponents' hands is taken.
+      let res = (typeof target === 'string' && STATE.RES[target]) ? target : null;
+      if (!res) {
+        let bestTotal = -1;
+        for (const other of g.players) {
+          if (other.id === pid) continue;
+          for (const r of Object.keys(STATE.RES)) {
+            if (other.hand[r] > bestTotal) { bestTotal = other.hand[r]; res = r; }
           }
         }
+      }
+      let total = 0;
+      for (const other of g.players) {
+        if (other.id === pid) continue;
+        total += other.hand[res] || 0;
+        other.hand[res] = 0;
+      }
+      if (total > 0) {
+        STATE.payout(g, p, res, total);
+        STATE.addLog(g, `${p.name} took ${total} ${STATE.RES[res].label} with Monopoly.`);
       }
       STATE.addLog(g, `${p.name} played Monopoly.`);
     } else if (cardType === 'roadBuild') {
