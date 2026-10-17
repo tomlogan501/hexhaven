@@ -217,6 +217,17 @@
     render();
   }
 
+  // Gray faceted rock, the same shape the board draws for ore harbours —
+  // replaces the ore emoji, which fails to render on some font sets.
+  const ROCK_SVG =
+    '<svg viewBox="-100 -100 200 200" width="19" height="19" ' +
+    'style="display:block;margin:0 auto" aria-hidden="true">' +
+    '<polygon points="-55,42 -38,5 -12,-35 22,-42 52,-10 58,22 38,48 -30,52" ' +
+    'fill="#8d8d95" stroke="rgba(18,24,32,.6)" stroke-width="9"/>' +
+    '<polygon points="-12,-35 22,-42 30,-5 -10,2" fill="#bcbfc7"/>' +
+    '<circle cx="5" cy="22" r="7" fill="rgba(40,48,58,.45)"/>' +
+    '</svg>';
+
   function renderHand() {
     const el = $('hand');
     if (!el) return;
@@ -230,10 +241,12 @@
         (picked > 0 ? ' picked' : '');
       chip.dataset.res = res;
       // The resource chip shows the same artwork as the harbor badges, a
-      // little bigger (`#hud-hand .res .icon` in style.css).
+      // little bigger (`#hud-hand .res .icon` in style.css). Ore uses a
+      // vector rock — the emoji fonts proved unreliable on some systems.
       const icon = document.createElement('span');
       icon.className = 'icon';
-      icon.textContent = MAPGEN.HARBOR_LABELS[res] || '•';
+      if (res === 'mount') icon.innerHTML = ROCK_SVG;
+      else icon.textContent = MAPGEN.HARBOR_LABELS[res] || '•';
       // Label and count are separate spans so small screens can hide the
       // word and keep just the coloured dot + count (see CSS).
       const label = document.createElement('span');

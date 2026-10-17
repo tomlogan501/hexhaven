@@ -297,15 +297,59 @@ const RENDER = (() => {
     ctx.stroke();
 
     // Ratio (top) + resource icon (bottom). 2:1 ports get a warm ratio so
-    // the good ones read at a glance; 3:1 shows the anchor.
+    // the good ones read at a glance; 3:1 shows the anchor. Ore ports draw
+    // a faceted gray rock (vector): the ore emoji is unreliable on some
+    // systems, and a rock reads better anyway.
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = harbor.res ? '#ffd98a' : '#d8ecff';
     ctx.font = `700 ${Math.round(S * 0.34 * k)}px "Trebuchet MS", sans-serif`;
     ctx.fillText(harbor.ratio + ':1', p.x, p.y - r * 0.28);
-    ctx.font = `${Math.round(S * 0.30 * k)}px "Trebuchet MS", sans-serif`;
-    ctx.fillText(harbor.res ? MAPGEN.HARBOR_LABELS[harbor.res] : '\u2693',
-      p.x, p.y + r * 0.38);
+    if (harbor.res === 'mount') {
+      drawRock(ctx, p.x, p.y + r * 0.38, S * 0.30 * k);
+    } else {
+      ctx.font = `${Math.round(S * 0.30 * k)}px "Trebuchet MS", sans-serif`;
+      ctx.fillText(harbor.res ? MAPGEN.HARBOR_LABELS[harbor.res] : '\u2693',
+        p.x, p.y + r * 0.38);
+    }
+  }
+
+  // A faceted gray boulder — the ore artwork. Drawn as vectors so it stays
+  // crisp at every zoom and never depends on emoji fonts.
+  function drawRock(ctx, cx, cy, s) {
+    ctx.save();
+    ctx.translate(cx, cy);
+    // Body: irregular heptagon with a dark outline.
+    ctx.beginPath();
+    ctx.moveTo(-0.55 * s, 0.42 * s);
+    ctx.lineTo(-0.38 * s, 0.05 * s);
+    ctx.lineTo(-0.12 * s, -0.35 * s);
+    ctx.lineTo(0.22 * s, -0.42 * s);
+    ctx.lineTo(0.52 * s, -0.10 * s);
+    ctx.lineTo(0.58 * s, 0.22 * s);
+    ctx.lineTo(0.38 * s, 0.48 * s);
+    ctx.lineTo(-0.30 * s, 0.52 * s);
+    ctx.closePath();
+    ctx.fillStyle = '#8d8d95';
+    ctx.strokeStyle = 'rgba(18, 24, 32, .6)';
+    ctx.lineWidth = Math.max(1, s * 0.09);
+    ctx.fill();
+    ctx.stroke();
+    // Sunlit top facet for volume.
+    ctx.beginPath();
+    ctx.moveTo(-0.12 * s, -0.35 * s);
+    ctx.lineTo(0.22 * s, -0.42 * s);
+    ctx.lineTo(0.30 * s, -0.05 * s);
+    ctx.lineTo(-0.10 * s, 0.02 * s);
+    ctx.closePath();
+    ctx.fillStyle = '#bcbfc7';
+    ctx.fill();
+    // Small dark speck like exposed ore.
+    ctx.beginPath();
+    ctx.arc(0.05 * s, 0.22 * s, s * 0.07, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(40, 48, 58, .45)';
+    ctx.fill();
+    ctx.restore();
   }
 
   // The robber: a scarlet badge in the same visual family as the number

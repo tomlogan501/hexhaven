@@ -6,6 +6,8 @@ const MAPGEN = (() => {
     hill: '#b0764a', mount: '#8d8d95', desert: '#d9cfa6',
   };
   const HARBOR_ICONS = { 2: '2:1', 3: '3:1' };
+  // The ore (mount) harbour ignores this map — render.js draws a vector
+  // rock instead, because the rock emoji fails to render on some systems.
   const HARBOR_LABELS = { forest: '🌲', pasture: '🐑', field: '🌾', hill: '🧱', mount: '🪨', null: '?' };
   // Official mix: 5 specific 2:1 ports — one per resource type (rulebook:
   // "only 1 special harbor for each type of resource") — plus 4 generic
