@@ -1009,6 +1009,8 @@
     });
   }
 
+  const opponentCount = $('opponent-count');
+  const islandSize = $('island-size');
   const newBtn = $('btn-new');
   if (newBtn) newBtn.addEventListener('click', () => startNewGame());
 
@@ -1018,7 +1020,9 @@
   function startNewGame() {
     winAnnounced = false;
     trade = null;
-    g = STATE.newGame(2, 2);
+    const aiCount = opponentCount ? Math.min(3, Math.max(1, Number(opponentCount.value) || 2)) : 2;
+    const radius = islandSize && islandSize.value === 'xl' ? 3 : 2;
+    g = STATE.newGame(aiCount + 1, radius);
     setupIdx = 0;
     tool = null;
     busy = false;

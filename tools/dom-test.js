@@ -36,6 +36,8 @@ class El {
       },
     };
   }
+  get value() { return this._value || ''; }
+  set value(v) { this._value = String(v); }
   get textContent() {
     if (this.children.length) {
       return this.children.map(c => (c && c.isText) ? c._text : c.textContent).join('');
@@ -95,6 +97,7 @@ function mk(id, tag) { const e = new El(id, tag); byId.set(id, e); return e; }
 const IDS = [
   'board', 'status', 'players', 'hand', 'buildhint', 'buildbar',
   'btn-roll', 'btn-pass', 'btn-music', 'btn-sfx', 'btn-new', 'btn-debug',
+  'opponent-count', 'island-size',
   'btn-dev', 'devcards', 'devhint', 'discardpanel', 'discarthint',
   'boardinfo', 'rollresult', 'log',
 ];
@@ -283,7 +286,7 @@ async function sweep(want, step = 6) {
 
 (async () => {
   // ---- boot
-  check('boot: sidebar shows 2 players', $('players').children.length === 2,
+  check('boot: sidebar shows 3 players', $('players').children.length === 3,
     'got ' + $('players').children.length);
   const handChips = () => $('hand').children.filter(c => c.classList.contains('res'));
   check('boot: 5 hand chips', handChips().length === 5, 'got ' + handChips().length);
@@ -513,12 +516,33 @@ async function sweep(want, step = 6) {
     ['forest', 'pasture', 'field', 'hill', 'mount'].every(res =>
       LIVE().players[0].hand[res] === 0), $('hand').textContent);
 
+  $('opponent-count').value = '1';
+  $('island-size').value = 'xl';
+  $('btn-new').click();
+  check('new game uses one AI opponent', LIVE().players.length === 2,
+    'got ' + LIVE().players.length + ' players');
+  check('XL island has 37 tiles', LIVE().map.tiles.length === 37,
+    'got ' + LIVE().map.tiles.length + ' tiles');
+
+  $('opponent-count').value = '3';
+  $('island-size').value = 'standard';
+  $('btn-new').click();
+  check('new game uses three AI opponents', LIVE().players.length === 4,
+    'got ' + LIVE().players.length + ' players');
+  check('standard island has 19 tiles', LIVE().map.tiles.length === 19,
+    'got ' + LIVE().map.tiles.length + ' tiles');
+
   // ---- Debug: auto-play button (runs the real click path end to end)
   // main.js's debug run plays toward a 10 VP win, which is far longer than
   // this harness can simulate, so assert real *progress* instead of a win:
   // opening placed, setup finished, turns advancing, pieces being built.
   {
+    $('opponent-count').value = '3';
+    $('island-size').value = 'xl';
     $('btn-debug').click();
+    check('debug auto-play uses selected opponents and XL island',
+      LIVE().players.length === 4 && LIVE().map.tiles.length === 37,
+      LIVE().players.length + ' players, ' + LIVE().map.tiles.length + ' tiles');
     // state.js caps g.log at 200 entries and the DOM window is 40, so early
     // lines are evicted long before a 400-turn run ends. Tee them as they
     // appear by watching the array identity (a new game replaces it).
@@ -567,8 +591,8 @@ async function sweep(want, step = 6) {
     check('debug auto-play places the opening via clicks',
       /founded your first settlement/.test(al) && /built your first road/.test(al));
     check('debug auto-play finishes setup', /Everyone is placed/.test(al));
-    check('debug auto-play plays many turns', lastTurn >= 25,
-      'reached turn ' + lastTurn);
+    check('debug auto-play advances through turns', lastTurn >= 25 || (LIVE() && LIVE().winner),
+      LIVE() && LIVE().winner ? 'winner: ' + LIVE().winner.name : 'reached turn ' + lastTurn);
 
     // The economy must demonstrably advance: real pieces and real score
     // growth. Whether a given dice run reaches 10 VP inside this harness's

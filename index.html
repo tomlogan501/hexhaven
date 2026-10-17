@@ -85,6 +85,19 @@
         <label class="optrow">Volume
           <input type="range" id="volume" min="0" max="100" value="70">
         </label>
+        <label class="optrow">AI opponents
+          <select id="opponent-count">
+            <option value="1">1</option>
+            <option value="2" selected>2</option>
+            <option value="3">3</option>
+          </select>
+        </label>
+        <label class="optrow">Island size
+          <select id="island-size">
+            <option value="standard" selected>Standard</option>
+            <option value="xl">XL (double tiles)</option>
+          </select>
+        </label>
         <button class="btn ghost" id="btn-new">New game</button>
         <button class="btn ghost" id="btn-debug">Debug: auto-play</button>
       </div>
