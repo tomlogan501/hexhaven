@@ -181,8 +181,19 @@ const RULES = (() => {
       STATE.addLog(g, `${p.name} played a Knight (${p.playedKnights} total).`);
       g.robberFromSeven = true;
     } else if (cardType === 'yearPlenty') {
-      for (const res of ['forest', 'field']) {
-        if (g.deck.length > 0) p.devCards.push(g.deck.pop());
+      // Official: take any 2 resource cards from the bank. `target` supplies
+      // the player's choice, [{res},{res}] or an array of resource keys;
+      // without it the scarcest needed resources are taken.
+      const needs = ['mount', 'field', 'forest', 'hill', 'pasture'];
+      const picks = (Array.isArray(target) && target.length === 2)
+        ? target.filter(res => STATE.RES[res]).slice(0, 2)
+        : needs.filter(res => p.hand[res] === 0).slice(0, 2);
+      while (picks.length < 2) {
+        picks.push(needs.find(res => !picks.includes(res)) || 'forest');
+      }
+      for (const res of picks) {
+        STATE.payout(g, p, res, 1);
+        STATE.addLog(g, `${p.name} took 1 ${STATE.RES[res].label} from the bank.`);
       }
       STATE.addLog(g, `${p.name} played Year of Plenty.`);
     } else if (cardType === 'monopoly') {

@@ -157,9 +157,9 @@ Monopoly ×2 — matches `STATE.DEV_CARDS` (state.js:13-19) ✅.
 - **Road Building** ⚠️ — official: build **2 free roads** on your turn. Ours only
   logs ("played Road Building", rules.js:172-173): the free-road effect is **not
   implemented** — the AI/UI must grant two free `buildRoad` pays.
-- **Year of Plenty** ⚠️ — official: take **any 2 resource cards from the bank**.
-  Ours pops **2 development cards from the deck** instead (rules.js:154-158) — a
-  real bug, must be replaced with two bank payouts of chosen resources.
+- **Year of Plenty** ✅ (fixed 2026-10-17) — take **any 2 resource cards from
+  the bank**: `playDevCard(..., 'yearPlenty', [resA, resB])`; without a target
+  the two scarcest needed resources are taken; no dev cards are drawn.
 - **Monopoly** ⚠️ — official: name **one** resource type and take **all** cards of
   that type from every other player. Ours takes **1 of each** type from every
   opponent (rules.js:159-171) — deviations from both "one type chosen by the

@@ -349,6 +349,28 @@ check('longest road counts the single segment', g.longest.length === 1,
   check('the VP card scores immediately', p.score >= 1, 'score=' + p.score);
 }
 
+// ---- Year of Plenty: takes 2 bank resources, chosen or scarcest-needed
+{
+  const gY = ctx.STATE.newGame(2, 2);
+  const p = gY.players[0];
+  p.devCards.push('yearPlenty');
+  p.devBoughtThisTurn = [];
+  // Targeted: the player explicitly names two resources.
+  ctx.RULES.playDevCard(gY, p.id, 'yearPlenty', ['forest', 'hill']);
+  check('Year of Plenty takes the chosen resources',
+    p.hand.forest === 1 && p.hand.hill === 1);
+  // Default: scarcest needed (nothing held → mount + field).
+  const p2 = gY.players[1];
+  p2.devCards.push('yearPlenty');
+  p2.devBoughtThisTurn = [];
+  ctx.RULES.playDevCard(gY, p2.id, 'yearPlenty');
+  check('Year of Plenty defaults to the scarcest needs',
+    p2.hand.mount === 1 && p2.hand.field === 1);
+  // No dev cards are drawn by this card any more.
+  check('Year of Plenty no longer draws dev cards',
+    gY.players[0].devCards.length === 0 && gY.players[1].devCards.length === 0);
+}
+
 // ---- resources: paying more than you hold must be refused
 {
   const g4 = ctx.STATE.newGame(2, 2);
