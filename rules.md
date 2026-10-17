@@ -154,9 +154,9 @@ Monopoly ×2 — matches `STATE.DEV_CARDS` (state.js:13-19) ✅.
 - **Knight** — move the robber + steal; counting toward Largest Army.
   Implemented in `playDevCard` (rules.js:149-153) ✅.
 - **Victory Point** — hidden +1 VP, counts in `scoreOf` (rules.js:237-239) ✅.
-- **Road Building** ⚠️ — official: build **2 free roads** on your turn. Ours only
-  logs ("played Road Building", rules.js:172-173): the free-road effect is **not
-  implemented** — the AI/UI must grant two free `buildRoad` pays.
+- **Road Building** ✅ (fixed 2026-10-17) — grants **2 free roads** on the
+  player's turn (`freeRoads` credits spent by `buildRoad`; a road otherwise
+  costs 1 wood + 1 brick and is refused when unaffordable).
 - **Year of Plenty** ✅ (fixed 2026-10-17) — take **any 2 resource cards from
   the bank**: `playDevCard(..., 'yearPlenty', [resA, resB])`; without a target
   the two scarcest needed resources are taken; no dev cards are drawn.

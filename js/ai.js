@@ -46,7 +46,8 @@ const AI = (() => {
 
   function bestRoad(g, pid) {
     const p = g.players[pid];
-    if (!RULES.canAfford(p, 'road')) return null;
+    // A road costs 1 wood + 1 brick — unless Road Building granted a credit.
+    if ((p.freeRoads || 0) <= 0 && !RULES.canAfford(p, 'road')) return null;
     let best = null, bestScore = -Infinity;
     for (const e of g.map.edges) {
       if (!RULES.roadBuildable(g, pid, e.id)) continue;

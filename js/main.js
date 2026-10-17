@@ -437,7 +437,13 @@
     const p = g.players[0];
     if (kind === 'road') {
       if (!RULES.roadBuildable(g, 0, id)) return false;
-      RULES.buildRoad(g, 0, id);
+      // A road costs 1 wood + 1 brick — or a free-road credit.
+      if (p.freeRoads <= 0 && !RULES.canAfford(p, 'road')) {
+        setHint('A road costs 1 wood and 1 brick.');
+        render();
+        return false;
+      }
+      if (!RULES.buildRoad(g, 0, id)) return false;
       log('You built a road.');
     } else if (kind === 'settlement') {
       if (!RULES.settlementSpotFree(g, id)) return false;

@@ -72,11 +72,18 @@ const RULES = (() => {
 
   function buildRoad(g, pid, eid) {
     const p = g.players[pid];
-    const e = g.map.edges[eid];
+    // Free roads (Road Building) skip the cost; otherwise the cost must be
+    // covered — refuse rather than driving the hand negative.
+    if (p.freeRoads > 0) {
+      p.freeRoads -= 1;
+    } else {
+      if (!canAfford(p, 'road')) return false;
+      pay(p, 'road');
+    }
     p.roads.push(eid);
-    e.built = pid;
-    pay(p, 'road');
+    g.map.edges[eid].built = pid;
     updateLongestRoad(g, pid);
+    return true;
   }
 
   function buildSettlement(g, pid, vid) {
@@ -222,7 +229,10 @@ const RULES = (() => {
       }
       STATE.addLog(g, `${p.name} played Monopoly.`);
     } else if (cardType === 'roadBuild') {
-      STATE.addLog(g, `${p.name} played Road Building.`);
+      // Official: build 2 free roads on this turn. The credits are spent by
+      // RULES.buildRoad without touching the player's hand.
+      p.freeRoads = (p.freeRoads || 0) + 2;
+      STATE.addLog(g, `${p.name} played Road Building (2 free roads).`);
     } else if (cardType === 'victory') {
       // A revealed VP card is permanent: it leaves the hand and its point
       // is banked on the player.

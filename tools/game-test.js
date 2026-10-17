@@ -398,6 +398,46 @@ check('longest road counts the single segment', g.longest.length === 1,
     p.hand.pasture === 6, p.hand.pasture);
 }
 
+// ---- Road Building: grants 2 free roads, no cards are drawn afterwards
+{
+  const gF = ctx.STATE.newGame(2, 2);
+  const p = gF.players[0];
+  p.devCards.push('roadBuild');
+  p.devBoughtThisTurn = [];
+  ctx.RULES.playDevCard(gF, p.id, 'roadBuild');
+  check('Road Building grants 2 free roads', p.freeRoads === 2);
+  // Empty hand: the free roads still build at network-attached spots, and
+  // the hand must not change (the founding payout of the settlement can —
+  // so compare against the hand recorded right before each road).
+  p.hand = ctx.STATE.emptyHand();
+  const vF = gF.map.vertices.find(v => ctx.RULES.settlementSpotFree(gF, v.id));
+  ctx.RULES.buildSettlement(gF, p.id, vF.id);
+  const e1 = gF.map.edges.find(e => e.built === null &&
+    (e.a === vF.id || e.b === vF.id));
+  const handBeforeRoad = Object.assign({}, p.hand);
+  const first = ctx.RULES.buildRoad(gF, p.id, e1.id);
+  const handAfterRoad = Object.assign({}, p.hand);
+  check('first free road builds with an empty hand',
+    first === true &&
+    Object.entries(handBeforeRoad).every(([res, n]) => handAfterRoad[res] === n));
+  const tipF = gF.map.edges[e1.id].a === vF.id ? gF.map.edges[e1.id].b : gF.map.edges[e1.id].a;
+  const e2 = gF.map.edges.find(e => e.built === null &&
+    (e.a === tipF || e.b === tipF));
+  const handBeforeRoad2 = Object.assign({}, p.hand);
+  const second = ctx.RULES.buildRoad(gF, p.id, e2.id);
+  const handAfterRoad2 = Object.assign({}, p.hand);
+  check('second free road builds and uses both credits',
+    second === true && p.freeRoads === 0 &&
+    Object.entries(handBeforeRoad2).every(([res, n]) => handAfterRoad2[res] === n));
+  // Third road: no credits and no resources — refused, nothing placed.
+  const tipG = gF.map.edges[e2.id].a === tipF ? gF.map.edges[e2.id].b : gF.map.edges[e2.id].a;
+  const e3 = gF.map.edges.find(e => e.built === null &&
+    (e.a === tipG || e.b === tipG));
+  const refused = ctx.RULES.buildRoad(gF, p.id, e3.id);
+  check('road without credits or resources is refused',
+    refused === false && e3.built === null);
+}
+
 // ---- resources: paying more than you hold must be refused
 {
   const g4 = ctx.STATE.newGame(2, 2);
