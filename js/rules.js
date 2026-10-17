@@ -336,6 +336,9 @@ const RULES = (() => {
     }
     for (const [res, n] of Object.entries(give)) { a.hand[res] -= n; b.hand[res] += n; }
     for (const [res, n] of Object.entries(want)) { b.hand[res] -= n; a.hand[res] += n; }
+    const bundleText = bundle => Object.entries(bundle)
+      .map(([res, n]) => `${n} ${STATE.RES[res].label}`).join(' + ');
+    STATE.addLog(g, `${a.name} traded ${bundleText(give)} to ${b.name} for ${bundleText(want)}.`);
     return true;
   }
 

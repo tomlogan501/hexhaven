@@ -156,7 +156,7 @@ const AI = (() => {
       maybeBuyDevCard(g, pid);
       maybePlayDevCard(g, pid);
 
-      // Trade with the bank so surplus resources become buildings.
+      tradeWithAI(g, pid);
       RULES.tradeTowardBuild(g, pid);
 
       // Priorities: city, settlement, road
@@ -199,6 +199,47 @@ const AI = (() => {
     setTimeout(step, 350);
   }
 
+  function tradeWithAI(g, pid) {
+    const player = g.players[pid];
+    if (!player.isAI) return false;
+    const needs = ['forest', 'hill', 'field', 'pasture', 'mount'];
+    const bundleText = bundle => Object.entries(bundle)
+      .map(([res, n]) => `${n} ${STATE.RES[res].label}`).join(' + ');
+    let madeOffer = false;
+    for (const targetId of g.players.map(p => p.id)) {
+      if (targetId === pid || !g.players[targetId].isAI) continue;
+      const partner = g.players[targetId];
+      for (const want of needs) {
+        if (player.hand[want] > 0) continue;
+        for (const give of needs) {
+          if (give === want || player.hand[give] < 1) continue;
+          const receives = { [want]: 1 };
+          const gives = { [give]: 1 };
+          madeOffer = true;
+          STATE.addLog(g, `${player.name} offered ${bundleText(gives)} to ${partner.name} for ${bundleText(receives)}.`);
+          if (partner.hand[want] < 1) {
+            STATE.addLog(g, `${partner.name} declined: not enough ${STATE.RES[want].label}.`);
+            continue;
+          }
+          if (!wantsTrade(g, targetId, gives, receives)) {
+            STATE.addLog(g, `${partner.name} declined ${player.name}'s offer.`);
+            continue;
+          }
+          if (!wantsTrade(g, pid, receives, gives)) {
+            STATE.addLog(g, `${player.name} withdrew the offer: it was no longer favorable.`);
+            continue;
+          }
+          if (RULES.partnerTrade(g, pid, targetId, gives, receives)) return true;
+          STATE.addLog(g, `${partner.name} declined: the trade could not be completed.`);
+        }
+      }
+    }
+    STATE.addLog(g, madeOffer
+      ? `${player.name} completed no player trade this turn.`
+      : `${player.name} had no player trade offers to make.`);
+    return false;
+  }
+
   // Would this AI accept a player-to-player trade? `receives` is the bundle
   // it would get, `gives` the bundle it would pay (both { res: n }).
   // Resources that close a gap toward something it can build are worth more
@@ -230,6 +271,6 @@ const AI = (() => {
 
   return {
     takeTurn, spotScore, bestSettlement, bestRoad, smartRobberMove, autoDiscard,
-    wantsTrade,
+    wantsTrade, tradeWithAI,
   };
 })();

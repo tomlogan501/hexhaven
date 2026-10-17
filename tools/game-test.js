@@ -155,6 +155,34 @@ check('longest road counts the single segment', g.longest.length === 1,
   void ai;
 }
 
+// ---- AI-to-AI player trades are reciprocal and logged
+{
+  const gTrade = ctx.STATE.newGame(3, 2);
+  for (const p of gTrade.players) p.hand = ctx.STATE.emptyHand();
+  gTrade.players[1].hand.pasture = 1;
+  gTrade.players[2].hand.forest = 1;
+  const before = gTrade.log.length;
+  check('AI trades a needed resource with another AI', ctx.AI.tradeWithAI(gTrade, 1));
+  check('AI trade transfers both resources',
+    gTrade.players[1].hand.forest === 1 && gTrade.players[1].hand.pasture === 0 &&
+    gTrade.players[2].hand.forest === 0 && gTrade.players[2].hand.pasture === 1);
+  check('AI trade offer and acceptance are logged',
+    gTrade.log.length > before &&
+    gTrade.log.some(line => /Mira offered 1 Sheep to Tomas for 1 Wood/.test(line)) &&
+    gTrade.log.some(line => /Mira traded 1 Sheep to Tomas for 1 Wood/.test(line)),
+    gTrade.log.slice(before).join(' | '));
+
+  const gDecline = ctx.STATE.newGame(3, 2);
+  for (const p of gDecline.players) p.hand = ctx.STATE.emptyHand();
+  gDecline.players[1].hand.forest = 1;
+  gDecline.players[2].hand.forest = 1;
+  ctx.AI.tradeWithAI(gDecline, 1);
+  check('AI trade refusals and final no-trade status are logged',
+    gDecline.log.some(line => /declined/.test(line)) &&
+    gDecline.log.some(line => /completed no player trade this turn/.test(line)),
+    gDecline.log.join(' | '));
+}
+
 // ---- resources: paying more than you hold must be refused
 {
   const g4 = ctx.STATE.newGame(2, 2);
