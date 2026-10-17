@@ -43,6 +43,15 @@ check('desert has no token', deserts.every(t => t.num === 0));
 check('all other tiles have a token 2-12',
   T.filter(t => t.res !== 'desert').every(t => t.num >= 2 && t.num <= 12));
 
+// A 7 never sits on a tile: rolling a 7 moves the robber instead.
+check('no tile shows a 7', T.every(t => t.num !== 7));
+
+// Official token multiset: once per round — 2 and 12 once, others twice.
+const tokens = T.filter(t => t.res !== 'desert').map(t => t.num).sort((a, b) => a - b);
+const round = [2, 3, 3, 4, 4, 5, 5, 6, 6, 8, 8, 9, 9, 10, 10, 11, 11, 12];
+check('tokens match the official multiset', tokens.join(',') === round.join(','),
+  tokens.join(','));
+
 // Every vertex must touch exactly 3 tiles, except outer-ring ones (2 or 1).
 const dist3 = V.filter(v => v.tiles.length === 3).length;
 check('some vertices touch 3 tiles', dist3 > 0, 'count=' + dist3);

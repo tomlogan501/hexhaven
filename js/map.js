@@ -143,32 +143,54 @@ const MAPGEN = (() => {
     return dist;
   }
 
-  // 4 wood, 4 sheep, 4 wheat, 3 brick, 3 ore, 1 desert = 19 tiles exactly.
+  // Standard island: 4 wood, 4 sheep, 4 wheat, 3 brick, 3 ore, 1 desert
+  // = 19 tiles. An XL island holds several of those "rounds" per 18-tile set.
   function assignTiles(tiles) {
-    const counts = { desert: 1, forest: 4, pasture: 4, field: 4, hill: 3, mount: 3 };
+    const rounds = Math.ceil(tiles.length / 19);
+    const baseCounts = { desert: 1, forest: 4, pasture: 4, field: 4, hill: 3, mount: 3 };
     const bag = [];
-    for (const [res, n] of Object.entries(counts)) for (let i = 0; i < n; i++) bag.push(res);
+    for (const [res, n] of Object.entries(baseCounts)) {
+      // One desert per round, except never more deserts than the island has
+      // tiles beyond a full 18-tile round (keeps the last round non-empty).
+      const count = res === 'desert'
+        ? Math.min(rounds, Math.max(1, tiles.length - 18 * rounds))
+        : n * rounds;
+      for (let i = 0; i < count; i++) bag.push(res);
+    }
+    while (bag.length > tiles.length) bag.pop();
+    while (bag.length < tiles.length) bag.push('forest');
     for (let i = bag.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [bag[i], bag[j]] = [bag[j], bag[i]];
     }
 
-    // Tokens 2..12, with 6 and 8 appearing three times. Desert takes no token.
-    const numbers = [];
+    // Official number tokens per round: 2..12 minus 7 (a 7 roll always
+    // moves the robber and never sits on a tile). Counts: 2 and 12 once,
+    // everything else twice — exactly one token per non-desert tile.
+    const baseNumbers = [];
     for (let n = 2; n <= 12; n++) {
-      const reps = (n === 6 || n === 8) ? 3 : 2;
-      for (let i = 0; i < reps; i++) numbers.push(n);
+      if (n === 7) continue;
+      const reps = (n === 2 || n === 12) ? 1 : 2;
+      for (let i = 0; i < reps; i++) baseNumbers.push(n);
     }
+    const desertCount = bag.filter(res => res === 'desert').length;
+    const numbers = [];
+    while (numbers.length < tiles.length - desertCount) numbers.push(...baseNumbers);
+    numbers.length = tiles.length - desertCount;
     for (let i = numbers.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [numbers[i], numbers[j]] = [numbers[j], numbers[i]];
     }
 
     // Deal outward from the centre so the richest tiles are contested.
+    // The desert takes no token and must not consume one either.
     const dist = (t) => Math.abs(t.q) + Math.abs(t.r) + Math.abs(t.q + t.r);
     const byDist = tiles.slice().sort((a, b) => dist(a) - dist(b));
     byDist.forEach((t, i) => { t.res = bag[i]; });
-    byDist.forEach((t, i) => { t.num = t.res === 'desert' ? 0 : numbers[i]; });
+    let ni = 0;
+    byDist.forEach((t) => {
+      t.num = t.res === 'desert' ? 0 : numbers[ni++];
+    });
   }
 
   return { build, RESOURCES, COLORS, HARBOR_ICONS, HARBOR_LABELS, HARBOR_TYPES };
