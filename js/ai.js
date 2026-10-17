@@ -73,18 +73,19 @@ const AI = (() => {
     return true;
   }
 
-  // Play a useful dev card
+  // Play a useful dev card — never one bought this turn (official rule);
+  // Victory Point cards are exempt from that restriction.
   function maybePlayDevCard(g, pid) {
     const p = g.players[pid];
-    if (p.devPlayedThisTurn) return false;
     if (p.devCards.length === 0) return false;
     // Play victory cards last (they're worth points)
     const useful = ['yearPlenty', 'monopoly', 'knight', 'roadBuild', 'victory'];
     for (const card of useful) {
-      if (p.devCards.includes(card)) {
-        RULES.playDevCard(g, pid, card);
-        return true;
-      }
+      if (!p.devCards.includes(card)) continue;
+      if (card !== 'victory' &&
+          (p.devPlayedThisTurn || p.devBoughtThisTurn.includes(card))) continue;
+      RULES.playDevCard(g, pid, card);
+      return true;
     }
     return false;
   }

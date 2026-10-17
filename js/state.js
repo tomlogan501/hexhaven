@@ -40,6 +40,8 @@ const STATE = (() => {
       roads: [],         // edge ids
       score: 0,
       devCards: [],      // held development cards
+      devBoughtThisTurn: [], // card types bought this turn (may not be played yet)
+      vpRevealed: 0,     // Victory Point cards revealed (permanent points)
       playedKnights: 0,  // knights played this game
       hasRolled: false,
       builtThisTurn: 0,

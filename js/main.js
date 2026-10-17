@@ -611,7 +611,25 @@
 
   function playDevCard(type) {
     if (busy || g.current !== 0 || g.phase !== 'build') return;
-    if (!RULES.playDevCard(g, 0, type)) return;
+    const p = g.players[0];
+    if (type !== 'victory' && p.devBoughtThisTurn.includes(type)) {
+      setHint(`A ${STATE.DEV_CARDS[type].label} bought this turn can be played on your next turn.`);
+      render();
+      return;
+    }
+    if (type !== 'victory' && p.devPlayedThisTurn) {
+      setHint('You already played a development card this turn.');
+      render();
+      return;
+    }
+    const before = p.devCards.length;
+    if (!RULES.playDevCard(g, 0, type)) {
+      if (p.devCards.length === before) {
+        setHint(`No ${STATE.DEV_CARDS[type].label} card to play.`);
+        render();
+      }
+      return;
+    }
     log(`You played a ${STATE.DEV_CARDS[type].label} card.`);
     if (RULES.checkWinner(g)) { render(); return; }
     // A Knight summons the robber: let the human place it.
@@ -639,6 +657,7 @@
     const p = g.players[0];
     p.hasRolled = false;
     p.devPlayedThisTurn = false;
+    p.devBoughtThisTurn = [];
     p.builtThisTurn = 0;
     tool = null;
     g.current = (g.current + 1) % g.players.length;
@@ -674,6 +693,7 @@
   function finishAITurn(p) {
     p.hasRolled = false;
     p.devPlayedThisTurn = false;
+    p.devBoughtThisTurn = [];
     p.builtThisTurn = 0;
     RULES.refreshScores(g);
     busy = false;
@@ -1066,16 +1086,22 @@
     // Convert surplus resources into what we can actually build.
     RULES.tradeTowardBuild(g, pid);
 
-    // Buy and play a development card when it makes sense.
-    if (!p.devPlayedThisTurn && RULES.canAfford(p, 'devCard') && g.deck.length > 0) {
-      const card = RULES.buyDevCard(g, pid);
-      if (card && card !== 'victory') {
-        RULES.playDevCard(g, pid, card);
-        if (card === 'knight' && g.robberFromSeven) {
+    // Play a card bought on a PREVIOUS turn — official rule: not one drawn
+    // this turn (Victory Point cards may be revealed at any time).
+    if (!p.devPlayedThisTurn && p.devCards.length > 0) {
+      const ready = p.devCards.find(c =>
+        c === 'victory' || !p.devBoughtThisTurn.includes(c));
+      if (ready) {
+        RULES.playDevCard(g, pid, ready);
+        if (ready === 'knight' && g.robberFromSeven) {
           AI.smartRobberMove(g, pid);
           g.phase = 'build';
         }
       }
+    }
+    // Buy one for the next turn.
+    if (RULES.canAfford(p, 'devCard') && g.deck.length > 0) {
+      RULES.buyDevCard(g, pid);
     }
 
     const city = debugBestCity(pid);

@@ -74,12 +74,12 @@ turn, never a card bought in the same turn (except final-point VP cards).
 
 Implementation: `g.phase` machine in `state.js`/`main.js`
 (`setup1 | setup2 | roll | build | trade | robber | done`), `p.hasRolled`,
-`p.devPlayedThisTurn`. Dice: two d6 summed (`roll()`, main.js:400-422).
+`p.devPlayedThisTurn`. Dice: two d6 summed (`roll()`, main.js).
 
-⚠️ Deviations:
-- A dev card bought this turn can be played immediately (no cooldown).
-- Only one dev card per turn is not tracked generically (`devPlayedThisTurn` is set
-  but not enforced as a cap for humans).
+✅ (fixed 2026-10-17) Dev card restrictions: at most **one** dev card per turn,
+never a card bought the same turn — Victory Point cards are exempt from both and
+bank a permanent point when revealed (`devPlayedThisTurn`, `devBoughtThisTurn`,
+`vpRevealed` in state.js/rules.js).
 
 ---
 
@@ -88,6 +88,9 @@ Implementation: `g.phase` machine in `state.js`/`main.js`
 Official: roll 2d6 (2–12). Every settlement adjacent to a tile showing the sum takes
 1 card; every **city** takes 2. Desert and (robber-occupied) tiles produce nothing. A
 roll of **7 produces nothing**.
+
+- On a **roll of 7** production stops; the active player resolves the robber
+  (see §5) 🚧.
 
 Implementation: `main.js:322` — `if (t.num !== total || t.res === 'desert') continue;`
 plus robber-occupied suppression (vested in payout flow); cities pay 2. With the
@@ -220,6 +223,7 @@ settlements 1, cities 2, VP cards 1 each, longest ≥ 5 = +2, army ≥ 3 = +2 �
 4. 🐞 Year of Plenty should take 2 resources from the bank, not 2 dev cards.
 5. 🐞 Monopoly: one chosen resource, take ALL cards of that type.
 6. 🚧 Road Building: grant 2 free roads.
-7. 🚧 No same-turn dev card restriction / one-dev-card-per-turn cap.
-8. ℹ️ Harbor types: 4 specific + 5 generic officially, here 5 + 4.
-9. ℹ️ Robber steal: mover-facing choice; currently random where applicable.
+7. ✅ No same-turn dev card restriction / one-dev-card-per-turn cap.
+8. ✅ Victory Point scoring: revealed VP cards bank a permanent point (`vpRevealed`).
+9. ℹ️ Harbor types: 4 specific + 5 generic officially, here 5 + 4.
+10. ℹ️ Robber steal: mover-facing choice; currently random where applicable.

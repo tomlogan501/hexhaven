@@ -155,6 +155,9 @@ const RULES = (() => {
     pay(p, 'devCard');
     const card = g.deck.pop();
     p.devCards.push(card);
+    // Official rule: a card bought this turn may not be played this turn.
+    // (Victory Point cards are exempt — they may be revealed immediately.)
+    p.devBoughtThisTurn.push(card);
     STATE.addLog(g, `${p.name} bought a ${STATE.DEV_CARDS[card].label} card.`);
     return card;
   }
@@ -163,6 +166,12 @@ const RULES = (() => {
     const p = g.players[pid];
     const idx = p.devCards.indexOf(cardType);
     if (idx < 0) return false;
+    // Official: at most one development card per turn — except revealing a
+    // Victory Point card — and never a card bought this turn.
+    if (cardType !== 'victory') {
+      if (p.devPlayedThisTurn) return false;
+      if (p.devBoughtThisTurn.includes(cardType)) return false;
+    }
     p.devCards.splice(idx, 1);
     p.devPlayedThisTurn = true;
 
@@ -192,6 +201,9 @@ const RULES = (() => {
     } else if (cardType === 'roadBuild') {
       STATE.addLog(g, `${p.name} played Road Building.`);
     } else if (cardType === 'victory') {
+      // A revealed VP card is permanent: it leaves the hand and its point
+      // is banked on the player.
+      p.vpRevealed = (p.vpRevealed || 0) + 1;
       STATE.addLog(g, `${p.name} revealed a Victory Point card!`);
     }
     void target;
@@ -297,9 +309,9 @@ const RULES = (() => {
   // ---- scoring
   function scoreOf(g, p) {
     let s = p.settlements.length + p.cities.length * 2;
-    // Count victory point cards in hand
+    // Count victory point cards in hand (hidden) plus already-revealed ones.
     const vpCards = p.devCards.filter(d => d === 'victory').length;
-    s += vpCards;
+    s += vpCards + (p.vpRevealed || 0);
     if (g.longest.player === p.id && g.longest.length >= 5) s += 2;
     if (g.largestArmy.player === p.id && g.largestArmy.size >= 3) s += 2;
     return s;

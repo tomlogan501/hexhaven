@@ -315,6 +315,40 @@ check('longest road counts the single segment', g.longest.length === 1,
     gDecline.log.join(' | '));
 }
 
+// ---- dev cards: turn restrictions per official rules
+{
+  const gD = ctx.STATE.newGame(2, 2);
+  const p = gD.players[0];
+  Object.assign(p.hand, { forest: 10, pasture: 10, field: 10, hill: 10, mount: 10 });
+  // Force the draw: a Knight on top of the deck.
+  gD.deck.push('knight');
+  const bought = ctx.RULES.buyDevCard(gD, 0);
+  check('knight drawn for restriction test', bought === 'knight');
+  check('a card bought this turn cannot be played this turn',
+    ctx.RULES.playDevCard(gD, 0, 'knight') === false);
+  // New turn: bought-cards list resets, play goes through.
+  p.devBoughtThisTurn = [];
+  check('playing on the next turn works',
+    ctx.RULES.playDevCard(gD, 0, 'knight') === true);
+  // One dev card per turn: a second card must wait.
+  gD.deck.push('yearPlenty');
+  ctx.RULES.buyDevCard(gD, 0);
+  check('only one development card per turn',
+    ctx.RULES.playDevCard(gD, 0, 'yearPlenty') === false);
+}
+
+{
+  const gV = ctx.STATE.newGame(2, 2);
+  const p = gV.players[0];
+  Object.assign(p.hand, { forest: 10, pasture: 10, field: 10, hill: 10, mount: 10 });
+  gV.deck.push('victory');
+  ctx.RULES.buyDevCard(gV, 0);
+  // Victory Point cards are exempt: revelable the same turn.
+  check('a Victory Point card may be revealed the same turn',
+    ctx.RULES.playDevCard(gV, 0, 'victory') === true);
+  check('the VP card scores immediately', p.score >= 1, 'score=' + p.score);
+}
+
 // ---- resources: paying more than you hold must be refused
 {
   const g4 = ctx.STATE.newGame(2, 2);
