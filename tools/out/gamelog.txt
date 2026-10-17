@@ -1,0 +1,40 @@
+You rolled 3.
+Mira rolled 3.
+Debug: turn 25… scores You 5, Mira 2
+You rolled 7.
+A 7 was rolled — the robber strikes.
+Robber moved to pasture tile (8).
+You stole a Sheep from Mira.
+Mira rolled 8.
+You rolled 9.
+Mira rolled 6.
+You rolled 4.
+You bought a Road Building card.
+You played Road Building.
+Mira rolled 8.
+Mira built a city.
+You rolled 5.
+Mira rolled 8.
+You rolled 2.
+Mira rolled 9.
+You rolled 4.
+Mira rolled 6.
+You rolled 3.
+Mira rolled 8.
+You rolled 8.
+Mira rolled 9.
+Mira discarded 4 cards after rolling a 7.
+You rolled 7.
+A 7 was rolled — the robber strikes.
+Robber moved to field tile (9).
+You stole a Ore from Mira.
+Mira rolled 5.
+You rolled 3.
+Mira rolled 5.
+You rolled 6.
+You bought a Knight card.
+You played a Knight (2 total).
+Robber moved to pasture tile (8).
+You stole a Grain from Mira.
+Mira rolled 5.
+You rolled 5.

@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<!-- maximum-scale/user-scalable keep the page itself from zooming so two
+     fingers always pinch the BOARD, not the browser. -->
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Hex Haven</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app">
+  <header id="topbar">
+    <h1>Hex Haven</h1>
+    <div id="status">Generating the island…</div>
+    <div id="turninfo"></div>
+    <button class="btn ghost" id="btn-log">Log</button>
+  </header>
+
+  <!-- The board owns the screen. HUD panels float above it, as on Colonist,
+       so no fixed-width sidebar steals width from the board. -->
+  <main id="stage">
+    <canvas id="board"></canvas>
+
+    <section class="hud" id="hud-players">
+      <h3>Players</h3>
+      <div id="players"></div>
+      <p class="hint" id="boardinfo"></p>
+    </section>
+
+    <section class="hud" id="hud-log">
+      <h3>Log</h3>
+      <div id="log"></div>
+    </section>
+
+    <!-- Compact bottom bar: resources, then build tools + dice on ONE row,
+         a single hint line, and secondary options tucked into a gear menu.
+         Empty containers must not reserve space. -->
+    <section class="hud" id="hud-hand">
+      <div id="hand" class="chips"></div>
+      <div class="handbar">
+        <div class="chips" id="buildbar">
+          <button class="btn" data-build="settlement">Settlement</button>
+          <button class="btn" data-build="road">Road</button>
+          <button class="btn" data-build="city">City</button>
+          <button class="btn" id="btn-dev">Dev card</button>
+        </div>
+        <div class="chips">
+          <button class="btn primary" id="btn-roll">Roll dice</button>
+          <button class="btn" id="btn-trade">Trade</button>
+          <button class="btn" id="btn-pass">End turn</button>
+        </div>
+        <div class="chips" id="devcards"></div>
+        <button class="btn gear" id="btn-menu" title="Options">&#9881;</button>
+      </div>
+      <div class="hintline">
+        <p class="hint" id="rollresult">Click Roll to begin.</p>
+        <p class="hint" id="buildhint">Pick a build tool, then click a highlighted spot.</p>
+      </div>
+      <div id="discardpanel" class="hidden">
+        <p class="hint warn" id="discarthint"></p>
+      </div>
+      <!-- Player-to-player trade panel, shown centred over the board while
+           an offer is being composed. -->
+      <section class="hud hidden" id="tradepanel">
+        <h3>Trade with players</h3>
+        <p class="hint" id="tradehint">Click chips to set quantities.</p>
+        <div class="traderow"><span class="tradelabel">You give</span>
+          <div id="trade-give" class="chips"></div>
+        </div>
+        <div class="traderow"><span class="tradelabel">You get</span>
+          <div id="trade-want" class="chips"></div>
+        </div>
+        <div class="chips">
+          <button class="btn primary" id="btn-offer">Offer</button>
+          <button class="btn" id="btn-trade-clear">Clear</button>
+          <button class="btn" id="btn-trade-close">Close</button>
+        </div>
+      </section>
+
+      <!-- Options popover, anchored above the gear button. -->
+      <div class="chips" id="optmenu">
+        <button class="btn ghost" id="btn-music">Music: off</button>
+        <button class="btn ghost" id="btn-sfx">SFX: on</button>
+        <label class="optrow">Volume
+          <input type="range" id="volume" min="0" max="100" value="70">
+        </label>
+        <button class="btn ghost" id="btn-new">New game</button>
+        <button class="btn ghost" id="btn-debug">Debug: auto-play</button>
+      </div>
+    </section>
+
+    <!-- Zoom controls ride the right edge, clear of the log (top) and the
+         hand (bottom), and work in portrait as well as landscape. -->
+    <section class="hud" id="camcontrols">
+      <button class="btn" id="btn-zoom-in" title="Zoom in">+</button>
+      <button class="btn" id="btn-zoom-out" title="Zoom out">&minus;</button>
+      <button class="btn" id="btn-zoom-fit" title="Recentrer le plateau">&#x2922;</button>
+    </section>
+  </main>
+</div>
+
+<script>
+// TEMP probe: ?camtrade opens the trade panel and sets a sample offer.
+if (location.search.indexOf('camtrade') >= 0) {
+  addEventListener('load', () => setTimeout(() => {
+    // Finish the setup (Roll doubles as skip-ahead), wait for the human's
+    // build phase, then open the panel and set a sample offer.
+    document.getElementById('btn-roll').click();
+    const tryOpen = (tries) => {
+      const b = document.getElementById('btn-trade');
+      if (b && !b.disabled) {
+        b.click();
+      } else {
+        const roll = document.getElementById('btn-roll');
+        if (roll && !roll.disabled) roll.click();  // setup skip / dice roll
+      }
+      if (b && !b.disabled) {
+        setTimeout(() => {
+          const chips = document.querySelectorAll('#trade-give .res, #trade-want .res');
+          chips[0].click(); chips[0].click();
+          chips[5 + 4].click();
+        }, 150);
+      } else if (tries > 0) {
+        setTimeout(() => tryOpen(tries - 1), 150);
+      }
+    };
+    setTimeout(() => tryOpen(60), 200);
+  }, 600));
+}
+</script>
+<script src="js/hex.js"></script>
+<script src="js/map.js"></script>
+<script src="js/state.js"></script>
+<script src="js/rules.js"></script>
+<script src="js/render.js"></script>
+<script src="js/ai.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/art.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>

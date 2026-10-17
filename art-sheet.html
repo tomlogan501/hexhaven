@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Hex Haven — Art Sheet</title>
+<style>
+  body { background:#16202b; color:#e6ecf2; font-family:"Trebuchet MS",sans-serif; margin:0; padding:24px; }
+  h1 { color:#f0c987; font-size:20px; letter-spacing:2px; margin:0 0 4px; }
+  h2 { font-size:12px; text-transform:uppercase; letter-spacing:1.5px; opacity:.55; margin:28px 0 10px; }
+  .row { display:flex; gap:18px; flex-wrap:wrap; align-items:flex-end; }
+  .cell { text-align:center; font-size:11px; opacity:.7; }
+  svg { display:block; }
+  .tile { width:88px; height:88px; }
+  .piece { width:70px; height:70px; }
+  .card { width:90px; height:128px; }
+  .wide { width:110px; height:60px; }
+</style>
+</head>
+<body>
+<h1>Hex Haven — Art Sheet</h1>
+<p style="opacity:.6;font-size:13px">Original SVG artwork. Open in Brave; scales to any size.</p>
+
+<h2>Resource hexes</h2>
+<div class="row" id="hexes"></div>
+
+<h2>Pieces</h2>
+<div class="row" id="pieces"></div>
+
+<h2>Harbors</h2>
+<div class="row" id="harbors"></div>
+
+<h2>Development cards</h2>
+<div class="row" id="cards"></div>
+
+<h2>Full board</h2>
+<div id="board"></div>
+
+<!-- shared symbol definitions -->
+<script>
+fetch('assets/art.svg').then(r => r.text()).then(t => {
+  document.body.insertAdjacentHTML('afterbegin', t);
+  build();
+}).catch(e => {
+  document.body.insertAdjacentHTML('afterbegin', '<p style="color:#e05c5c">Open via http server, not file:// — SVG fetch is blocked on file URLs.</p>');
+});
+</script>
+
+<script>
+const HEXES = [['hex-forest','Wood'],['hex-pasture','Sheep'],['hex-field','Grain'],
+  ['hex-hill','Brick'],['hex-mount','Ore'],['hex-desert','Desert']];
+const PIECES = [['settlement','Settlement','#e05c5c'],['city','City','#4a90d9'],
+  ['robber','Robber','#888']];
+const HARBORS = [['harbor','3:1 any'],['harbor2','2:1 specific']];
+const CARDS = [['dev-knight','Knight'],['dev-victory','Victory'],['dev-road','Road Building'],
+  ['dev-year','Year of Plenty'],['dev-monopoly','Monopoly']];
+
+function use(id, cls) {
+  return `<svg class="${cls}" viewBox="${
+    document.getElementById(id).getAttribute('viewBox')}"><use href="#${id}"/></svg>`;
+}
+function mount(target, items, cls) {
+  const el = document.getElementById(target);
+  el.innerHTML = items.map(([id,label]) =>
+    `<div class="cell">${use(id, cls)}<div>${label}</div></div>`).join('');
+}
+function build() {
+  mount('hexes', HEXES, 'tile');
+  document.getElementById('pieces').innerHTML = PIECES.map(([id,label,color]) =>
+    `<div class="cell"><svg class="piece" viewBox="${
+      document.getElementById(id).getAttribute('viewBox')
+    }" style="color:${color}"><use href="#${id}"/></svg><div>${label}</div></div>`).join('');
+  mount('harbors', HARBORS, 'wide');
+  mount('cards', CARDS, 'card');
+  buildBoard();
+}
+
+// A complete 19-hex Catan board, laid out with the real axial pixel layout.
+function buildBoard() {
+  const S = 46, R = 2, H = Math.sqrt(3);
+  const key = (q,r) => q + ',' + r;
+  const tiles = [];
+  for (let q=-R; q<=R; q++)
+    for (let r=Math.max(-R,-q-R); r<=Math.min(R,-q+R); r++)
+      tiles.push({q,r});
+
+  const counts = {desert:1,forest:4,pasture:4,field:4,hill:3,mount:3};
+  const bag=[]; for(const[k,n] of Object.entries(counts)) for(let i=0;i<n;i++) bag.push(k);
+  const seedNums=[2,3,3,4,4,5,5,6,6,6,8,8,8,9,9,10,10,11,11,12,12];
+  let s=7;
+  const rnd=()=>{s=(s*1103515245+12345)&0x7fffffff; return s/0x7fffffff;};
+  const shuf=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
+  shuf(bag); shuf(seedNums);
+  const dist=t=>Math.abs(t.q)+Math.abs(t.r)+Math.abs(t.q+t.r);
+  tiles.sort((a,b)=>dist(a)-dist(b));
+  tiles.forEach((t,i)=>{ t.res=bag[i]; t.num=t.res==='desert'?0:seedNums[i]; });
+
+  const cx = q => S*1.5*q;
+  const cy = (q, r) => S*H*(r + q/2);
+  const minX = Math.min(...tiles.map(t => cx(t.q)));
+  const maxX = Math.max(...tiles.map(t => cx(t.q)));
+  const minY = Math.min(...tiles.map(t => cy(t.q, t.r)));
+  const maxY = Math.max(...tiles.map(t => cy(t.q, t.r)));
+  const pad = S*2.6;
+  let svg = `<svg width="${maxX-minX+pad*2}" height="${maxY-minY+pad*2}"
+    viewBox="${minX-pad} ${minY-pad} ${maxX-minX+pad*2} ${maxY-minY+pad*2}">`;
+
+  // sea
+  svg += `<rect x="${minX-pad}" y="${minY-pad}" width="${maxX-minX+pad*2}"
+    height="${maxY-minY+pad*2}" rx="18" fill="#1d3552"/>`;
+  // wave texture
+  svg += `<g stroke="#2a4a6e" stroke-width="2" fill="none" opacity=".6">`;
+  for (let y = minY-pad+14; y < maxY+pad; y += 22)
+    svg += `<path d="M${minX-pad+6},${y} q10,-5 20,0 q10,5 20,0"/>`;
+  svg += `</g>`;
+
+  const HEIGHT = 16;
+  // Board space -> screen space: vertical squash gives the axonometric look.
+  const S2 = (x, y, z = 0) => [x, y*0.58 - z];
+
+  // tiles, far to near
+  const order = tiles.slice().sort((a, b) => cy(a.q, a.r) - cy(b.q, b.r));
+  for (const t of order) {
+    const X=cx(t.q), Y=cy(t.q,t.r);
+    let pts='';
+    for (let i=0;i<6;i++){
+      const a=(Math.PI/3)*i;
+      const [px,py]=S2(X+S*Math.cos(a), Y+S*Math.sin(a), HEIGHT);
+      pts += px.toFixed(1)+','+py.toFixed(1)+' ';
+    }
+    const ptsBot=[];
+    for (let i=0;i<6;i++){
+      const a=(Math.PI/3)*i;
+      const [px,py]=S2(X+S*Math.cos(a), Y+S*Math.sin(a), 0);
+      ptsBot.push(px.toFixed(1)+','+py.toFixed(1));
+    }
+    const top=pts.trim().split(/\s+/);
+    // side walls (front-facing)
+    for (let i=0;i<6;i++){
+      const j=(i+1)%6;
+      const myT=parseFloat(top[i].split(',')[1])+parseFloat(top[j].split(',')[1]);
+      const myB=parseFloat(ptsBot[i].split(',')[1])+parseFloat(ptsBot[j].split(',')[1]);
+      if (myT <= myB) continue;
+      svg += `<polygon points="${top[i]} ${top[j]} ${ptsBot[j]} ${ptsBot[i]}"
+        fill="#000" opacity=".3"/>`;
+    }
+    svg += `<polygon points="${pts}" fill="none"/>`;
+    svg += `<use href="#${'hex-'+t.res}" x="${X-S}" y="${Y*0.58-S-HEIGHT}"
+      width="${S*2}" height="${S*2}"/>`;
+    // token
+    if (t.num) {
+      const [tx,ty]=S2(X, Y, HEIGHT+1);
+      const p=Math.round(100/(t.num-5));
+      svg += `<ellipse cx="${tx.toFixed(1)}" cy="${ty.toFixed(1)}" rx="14" ry="8"
+        fill="#f3ead6" stroke="#8a7a5c"/>`;
+      svg += `<text x="${tx.toFixed(1)}" y="${(ty+1).toFixed(1)}" font-family="Trebuchet MS"
+        font-size="15" font-weight="bold" fill="#2a2318" text-anchor="middle">${t.num}</text>`;
+      svg += `<text x="${tx.toFixed(1)}" y="${(ty+11).toFixed(1)}" font-family="Trebuchet MS"
+        font-size="8" fill="#6b5b3e" text-anchor="middle">${p}%</text>`;
+    }
+  }
+
+  // settlements on a few spots
+  const vtx=[];
+  const seen=new Set();
+  for (const t of tiles) {
+    for (let i=0;i<6;i++){
+      const a=(Math.PI/3)*i;
+      const vx = t.q + S*Math.cos(a), vy = cy(t.q,t.r) + S*Math.sin(a);
+      const k = vx.toFixed(2) + '|' + vy.toFixed(2);
+      if (seen.has(k)) continue; seen.add(k);
+      vtx.push([vx, vy]);
+    }
+  }
+  const spots=[[0,'#e05c5c','settlement'],[3,'#4a90d9','settlement'],
+    [7,'#e05c5c','settlement'],[10,'#4a90d9','city'],[14,'#57b85b','settlement']];
+  for (const [i,col,kind] of spots) {
+    const [vx,vy]=vtx[i];
+    const [px,py]=S2(vx,vy,HEIGHT);
+    svg += `<use href="#${kind}" x="${(px-26).toFixed(1)}" y="${(py-42).toFixed(1)}"
+      width="52" height="52" style="color:${col}"/>`;
+  }
+  // robber
+  const [rx,ry]=S2(cx(0),cy(0,0),HEIGHT);
+  svg += `<use href="#robber" x="${(rx-16).toFixed(1)}" y="${(ry-26).toFixed(1)}"
+    width="32" height="44"/>`;
+  svg += `</svg>`;
+  document.getElementById('board').innerHTML = svg;
+}
+</script>
+</body>
+</html>

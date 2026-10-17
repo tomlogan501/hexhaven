@@ -1,0 +1,408 @@
+/* Hex Haven — board-first layout: the canvas fills the window and HUD panels
+   float above it, so the board is never squeezed by a fixed sidebar. */
+
+* { box-sizing: border-box; }
+
+:root {
+  --ink: #eaf0f6;
+  --dim: #93a4b8;
+  --gold: #f0c987;
+  /* Panels must sit well clear of the sea: measured contrast was only
+     1.2-1.45, which made the HUD read as flat mud. Dark, near-opaque panels
+     with a light border give the separation the old layout lacked. */
+  --panel: rgba(8, 14, 22, .94);
+  --edge: rgba(150, 190, 235, .38);
+  --sea: #1d4a78;
+  --sea-deep: #123a5e;
+}
+
+html, body { height: 100%; margin: 0; }
+
+body {
+  margin: 0;
+  font-family: "Trebuchet MS", "Segoe UI", system-ui, sans-serif;
+  background: var(--sea);
+  color: var(--ink);
+  overflow: hidden;
+}
+
+#app { display: flex; flex-direction: column; height: 100vh; }
+
+#topbar {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 9px 18px;
+  background: linear-gradient(#1d2a3a, #16202b);
+  border-bottom: 1px solid var(--edge);
+  z-index: 20;
+}
+
+#topbar h1 {
+  font-size: 17px;
+  margin: 0;
+  letter-spacing: 2.5px;
+  color: var(--gold);
+  text-transform: uppercase;
+}
+
+#status { font-size: 14px; }
+#turninfo { margin-left: auto; font-size: 13px; color: var(--dim); }
+
+/* The stage owns the whole window below the bar. */
+#stage { position: relative; flex: 1; min-height: 0; }
+
+#board {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  background: var(--sea);
+  cursor: pointer;
+  /* Gestures on the canvas belong to the game camera (pinch-zoom / pan),
+     never to the browser's page zoom or scroll. */
+  touch-action: none;
+}
+
+/* Floating glass panels, anchored to the board's corners. */
+.hud {
+  position: absolute;
+  background: linear-gradient(160deg, rgba(15, 23, 34, .95), rgba(8, 14, 22, .93));
+  border: 1px solid var(--edge);
+  border-radius: 12px;
+  padding: 10px 12px;
+  backdrop-filter: blur(6px);
+  box-shadow:
+    0 8px 26px rgba(0, 0, 0, .45),
+    inset 0 1px 0 rgba(255, 255, 255, .06);
+  z-index: 10;
+}
+
+.hud h3 {
+  margin: 0 0 7px;
+  font-size: 10px;
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+#hud-players { top: 14px; left: 14px; min-width: 200px; }
+#hud-log { top: 14px; right: 14px; width: 320px; }
+
+/* Hand and primary actions sit centred along the bottom edge as a compact
+   bar: resources, one row of tools + dice, one line of hints, and the
+   secondary options hidden behind the gear popover. */
+#hud-hand {
+  left: 50%;
+  bottom: 14px;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 7px 12px;
+  max-width: min(880px, 96vw);
+}
+
+/* Build tools, dice and dev cards share ONE row next to the gear. */
+.handbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+}
+.handbar .btn { padding: 5px 11px; font-size: 12.5px; }
+.handbar .btn.primary { padding: 6px 16px; font-size: 13px; }
+/* The gear is a little tab on the panel's top-right corner, OUT of the
+   button flow, so it can never push the bar onto an extra wrapped row. */
+.btn.gear {
+  position: absolute;
+  right: 10px;
+  top: -13px;
+  padding: 3px 10px;
+  font-size: 14px;
+  border-radius: 9px;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, .45);
+}
+
+/* Both hints share a single quiet line. */
+.hintline { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
+.hintline .hint { margin: 0; font-size: 11.5px; }
+#hud-hand #rollresult { font-size: 12px; color: var(--gold); opacity: .9; margin: 0; }
+
+/* Options popover anchored above the gear button. */
+#optmenu {
+  position: absolute;
+  right: 8px;
+  bottom: calc(100% + 6px);
+  display: none;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 5px;
+  padding: 10px;
+  /* Same panel chrome as the other HUD boxes. */
+  background: linear-gradient(160deg, rgba(15, 23, 34, .97), rgba(8, 14, 22, .95));
+  border: 1px solid var(--edge);
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .55), inset 0 1px 0 rgba(255, 255, 255, .06);
+  backdrop-filter: blur(6px);
+  z-index: 12;
+}
+#optmenu.open { display: flex; }
+.optrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--dim);
+  white-space: nowrap;
+}
+#volume {
+  width: 110px;
+  accent-color: var(--gold);
+  cursor: pointer;
+}
+
+/* Empty containers (dev cards, hand) must not reserve space. */
+#hud-hand #devcards:empty,
+#hud-hand .chips:empty { display: none; }
+
+#hud-hand .btn.ghost {
+  padding: 3px 8px;
+  font-size: 11px;
+  opacity: .6;
+  background: transparent;
+  border-color: rgba(150, 190, 235, .22);
+}
+#hud-hand .btn.ghost:hover { opacity: 1; background: rgba(255, 255, 255, .06); }
+
+/* Zoom controls ride the right edge, vertically centred: clear of the log
+   (top-right) and the hand (bottom-centre) in BOTH orientations. */
+#camcontrols {
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px;
+}
+#camcontrols .btn {
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  font-size: 18px;
+  line-height: 1;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#camcontrols .btn:active:not(:disabled) { transform: scale(.94); }
+
+/* The log toggle only exists on small screens (see media queries). */
+#btn-log { display: none; }
+
+#buildhint { text-align: center; max-width: min(620px, 90vw); }
+
+.chips { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; align-items: center; }
+
+.btn {
+  background: rgba(46, 64, 84, .92);
+  color: var(--ink);
+  border: 1px solid var(--edge);
+  border-radius: 8px;
+  padding: 7px 13px;
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .35), inset 0 1px 0 rgba(255, 255, 255, .07);
+  transition: background .12s, transform .06s, box-shadow .12s;
+}
+
+.btn:hover:not(:disabled) {
+  background: rgba(62, 86, 112, .95);
+  box-shadow: 0 3px 9px rgba(0, 0, 0, .4), inset 0 1px 0 rgba(255, 255, 255, .1);
+}
+
+.btn:active:not(:disabled) { transform: translateY(1px); }
+.btn.active { background: var(--gold); color: #17212c; border-color: var(--gold); font-weight: 700; }
+.btn:disabled { opacity: .4; cursor: default; }
+
+.btn.primary {
+  background: linear-gradient(#e8b465, #d79a3e);
+  color: #241a0c;
+  border-color: #f0c987;
+  font-weight: 700;
+  padding: 9px 22px;
+  font-size: 14px;
+}
+.btn.primary:hover:not(:disabled) { background: linear-gradient(#f2c479, #e0a648); }
+
+.btn.ghost { background: rgba(255, 255, 255, .05); font-size: 12px; padding: 5px 10px; }
+.btn.dev { border-color: rgba(240, 201, 135, .5); font-size: 12px; padding: 5px 10px; }
+
+.hint { margin: 0; font-size: 12.5px; color: var(--dim); line-height: 1.45; }
+.hint.warn { color: #ffb4a2; font-weight: 700; }
+
+.res {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(255, 255, 255, .06);
+  border: 1px solid transparent;
+  border-radius: 14px;
+  padding: 3px 9px 3px 5px;
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+  cursor: default;
+}
+
+.res .dot { width: 14px; height: 14px; border-radius: 50%; border: 1px solid rgba(0, 0, 0, .45); flex: none; }
+
+.player {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  border-radius: 8px;
+  margin-bottom: 4px;
+  font-size: 13px;
+  background: rgba(255, 255, 255, .04);
+}
+
+.player.active {
+  background: rgba(240, 201, 135, .14);
+  box-shadow: inset 0 0 0 1px var(--gold);
+  animation: pulseP 1.6s ease-in-out infinite;
+}
+@keyframes pulseP {
+  0%, 100% { box-shadow: inset 0 0 0 1px var(--gold); }
+  50% { box-shadow: inset 0 0 0 1px var(--gold), 0 0 14px rgba(240, 201, 135, .25); }
+}
+.player .swatch { width: 13px; height: 13px; border-radius: 4px; flex: none; }
+.player .score { margin-left: auto; color: var(--dim); font-variant-numeric: tabular-nums; }
+
+#log {
+  font-size: 12px;
+  line-height: 1.5;
+  max-height: 210px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(150, 190, 235, .4) transparent;
+}
+#log::-webkit-scrollbar { width: 8px; }
+#log::-webkit-scrollbar-thumb {
+  background: rgba(150, 190, 235, .3);
+  border-radius: 4px;
+}
+
+#log div {
+  padding: 3px 8px;
+  border-left: 2px solid var(--edge);
+  margin-bottom: 3px;
+  background: rgba(255, 255, 255, .03);
+  border-radius: 0 5px 5px 0;
+  color: #cfdae6;
+}
+
+.hidden { display: none !important; }
+
+/* Hand chips become the discard picker during a 7. */
+.res.pick { border-color: var(--gold); cursor: pointer; }
+.res.picked { background: rgba(240, 201, 135, .2); border-color: var(--gold); }
+
+#tradepanel {
+  /* Anchored INSIDE the hand panel, so it floats just above the bar. */
+  left: 50%;
+  bottom: calc(100% + 8px);
+  transform: translateX(-50%);
+  width: min(560px, 92vw);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 14;
+}
+#tradepanel.hidden { display: none; }
+.traderow { display: flex; align-items: center; gap: 10px; }
+.tradelabel {
+  flex: none;
+  width: 64px;
+  font-size: 11px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+.traderow .chips { justify-content: flex-start; }
+
+#devcards .btn { font-size: 12px; }
+#boardinfo span { display: block; }
+.badge {
+  display: inline-block; font-size: 10px; padding: 1px 5px; border-radius: 8px;
+  background: #3a4a5d; margin-left: 4px; vertical-align: middle;
+}
+
+/* ---- small screens and tablets: compact HUD ------------------------- */
+@media (max-width: 900px) {
+  #btn-log { display: inline-block; padding: 4px 9px; font-size: 11px; }
+
+  /* The log becomes a drawer, hidden until requested. */
+  #hud-log { display: none; }
+  body.log-open #hud-log {
+    display: block;
+    top: 56px;
+    right: 8px;
+    width: min(320px, calc(100vw - 16px));
+    max-height: 46vh;
+  }
+  body.log-open #log { max-height: 34vh; }
+
+  #hud-players {
+    left: 8px;
+    top: 8px;
+    min-width: 0;
+    padding: 7px 9px;
+  }
+  #hud-players h3 { display: none; }
+  .player { padding: 3px 6px; font-size: 12px; margin-bottom: 3px; }
+
+  /* The hand spans the full width so every action stays thumb-reachable
+     in portrait, with a safe-area inset for notched phones. */
+  #hud-hand {
+    left: 8px;
+    right: 8px;
+    bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+    transform: none;
+    max-width: none;
+    padding: 6px 8px;
+  }
+  .handbar { gap: 6px; }
+  .handbar .btn { padding: 6px 8px; font-size: 12.5px; }
+  .handbar .btn.primary { padding: 7px 13px; font-size: 13.5px; }
+  .btn.gear { right: 8px; top: -12px; }
+  /* On touch screens the resource words go away: dot colour + count only. */
+  .reslabel { display: none; }
+  .res { font-size: 13px; padding: 4px 9px 4px 5px; }
+  #optmenu { right: 6px; bottom: calc(100% + 4px); }
+
+  #topbar { padding: 7px 10px; gap: 10px; }
+  #topbar h1 { font-size: 14px; letter-spacing: 1.5px; }
+  #status { font-size: 12px; }
+  #turninfo { font-size: 11px; }
+
+  #camcontrols { right: 8px; }
+  #camcontrols .btn { width: 34px; height: 34px; font-size: 16px; }
+}
+
+/* Portrait phones: the log drawer drops BELOW the players panel instead of
+   fighting it for the top edge. */
+@media (orientation: portrait) and (max-width: 620px) {
+  body.log-open #hud-log {
+    top: 96px;
+    max-height: 38vh;
+  }
+  #topbar { flex-wrap: wrap; row-gap: 4px; }
+  #turninfo { flex-basis: 100%; order: 5; }
+}
