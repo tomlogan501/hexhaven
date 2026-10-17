@@ -886,12 +886,19 @@
     });
   }
 
-  // Options popover (music / SFX / volume / new game / debug) behind the gear.
+  // Options overlay behind the floating gear button; closes on the ✕
+  // button, a backdrop click, or Escape.
   const menuBtn = $('btn-menu');
-  if (menuBtn) {
-    menuBtn.addEventListener('click', () => {
-      const m = $('optmenu');
-      if (m) m.classList.toggle('open');
+  const optOverlay = $('optoverlay');
+  if (menuBtn && optOverlay) {
+    menuBtn.addEventListener('click', () => optOverlay.classList.toggle('open'));
+    const closeBtn = $('btn-opt-close');
+    if (closeBtn) closeBtn.addEventListener('click', () => optOverlay.classList.remove('open'));
+    optOverlay.addEventListener('click', (ev) => {
+      if (ev.target === optOverlay) optOverlay.classList.remove('open');
+    });
+    window.addEventListener('keydown', (ev) => {
+      if (ev.key === 'Escape') optOverlay.classList.remove('open');
     });
   }
 

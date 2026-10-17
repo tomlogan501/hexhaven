@@ -56,7 +56,6 @@
           <button class="btn" id="btn-pass">End turn</button>
         </div>
         <div class="chips" id="devcards"></div>
-        <button class="btn gear" id="btn-menu" title="Options">&#9881;</button>
       </div>
       <div class="hintline">
         <p class="hint" id="rollresult">Click Roll to begin.</p>
@@ -83,8 +82,31 @@
         </div>
       </section>
 
-      <!-- Options popover, anchored above the gear button. -->
-      <div class="chips" id="optmenu">
+      <!-- Options live in the overlay menu opened by the floating gear. -->
+    </section>
+
+    <!-- Zoom controls ride the right edge, clear of the log (top) and the
+         hand (bottom), and work in portrait as well as landscape. -->
+    <section class="hud" id="camcontrols">
+      <button class="btn" id="btn-zoom-in" title="Zoom in">+</button>
+      <button class="btn" id="btn-zoom-out" title="Zoom out">&minus;</button>
+      <button class="btn" id="btn-zoom-fit" title="Recentrer le plateau">&#x2922;</button>
+    </section>
+
+    <!-- Options gear floats on its own at the bottom-right corner, clear of
+         the action bar; it opens the overlay menu below. -->
+    <section class="hud" id="hud-gear">
+      <button class="btn gear" id="btn-menu" title="Options">&#9881;</button>
+    </section>
+
+    <!-- Options overlay: a centred menu card over a dimmed backdrop
+         (closes on the ✕ button, a backdrop click or Escape). -->
+    <div id="optoverlay">
+      <div id="optmenu" role="dialog" aria-label="Options">
+        <div class="opttop">
+          <h3>Options</h3>
+          <button class="btn ghost" id="btn-opt-close" title="Close">&#10005;</button>
+        </div>
         <button class="btn ghost" id="btn-music">Music: off</button>
         <button class="btn ghost" id="btn-sfx">SFX: on</button>
         <label class="optrow">Volume
@@ -106,15 +128,7 @@
         <button class="btn ghost" id="btn-new">New game</button>
         <button class="btn ghost" id="btn-debug">Debug: auto-play</button>
       </div>
-    </section>
-
-    <!-- Zoom controls ride the right edge, clear of the log (top) and the
-         hand (bottom), and work in portrait as well as landscape. -->
-    <section class="hud" id="camcontrols">
-      <button class="btn" id="btn-zoom-in" title="Zoom in">+</button>
-      <button class="btn" id="btn-zoom-out" title="Zoom out">&minus;</button>
-      <button class="btn" id="btn-zoom-fit" title="Recentrer le plateau">&#x2922;</button>
-    </section>
+    </div>
   </main>
 </div>
 

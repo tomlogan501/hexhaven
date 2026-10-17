@@ -82,6 +82,12 @@ const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
   fs.writeFileSync('docs/screenshot.tmp.png',
     Buffer.from((await c.send('Page.captureScreenshot', { format: 'png' })).data, 'base64'));
+
+  // Also capture the options overlay open, for HUD verification.
+  await c.eval('(function(){ const b = document.getElementById("btn-menu"); if (b) b.click(); return true; })()');
+  await sleep(500);
+  fs.writeFileSync('docs/overlay.tmp.png',
+    Buffer.from((await c.send('Page.captureScreenshot', { format: 'png' })).data, 'base64'));
   br.kill();
   console.log('shot saved');
 })().catch(e => { console.error(e); process.exit(1); });
