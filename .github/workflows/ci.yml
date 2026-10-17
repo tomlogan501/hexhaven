@@ -1,0 +1,30 @@
+# CI: run all headless test suites on every push and pull request.
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Board & rules checks (check.js)
+        run: node tools/check.js
+
+      - name: Rules engine (game-test.js)
+        run: node tools/game-test.js
+
+      - name: Turn flow, headless DOM (dom-test.js)
+        run: node tools/dom-test.js

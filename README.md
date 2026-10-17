@@ -5,13 +5,21 @@ HTML page, no build step, no dependencies.
 
 ![Hex Haven game board](docs/screenshot.png)
 
-**Play:** open `index.html` in a browser, or serve the folder statically.
+## Play online
 
-```
-node -e "console.log('static server: npx serve . or python -m http.server')"
-```
+The game is hosted by GitHub Pages (auto-deployed from `master` by
+`.github/workflows/deploy.yml`):
+
+**https://tomlogan501.github.io/hexhaven/**
+
+## Play locally
+
+Open `index.html` in a browser, or serve the folder statically.
 
 ## Tests
+
+Continuous integration runs all three suites on every push
+(`.github/workflows/ci.yml`). Locally:
 
 ```
 node tools/check.js    # board topology, tokens, harbors
