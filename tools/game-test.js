@@ -9,6 +9,7 @@ vm.createContext(ctx);
 
 const EXPORTS = {
   'hex.js': 'HEX', 'map.js': 'MAPGEN', 'state.js': 'STATE',
+  'i18n.js': 'I18N',
   'rules.js': 'RULES', 'ai.js': 'AI',
 };
 for (const [f, name] of Object.entries(EXPORTS)) {
@@ -288,6 +289,10 @@ check('longest road counts the single segment', g.longest.length === 1,
 }
 
 // ---- AI-to-AI player trades are reciprocal and logged
+// Log entries are stored untranslated ({ k, p }); render them in English
+// for the assertions.
+const enLog = (entry) => typeof entry === 'string'
+  ? entry : ctx.I18N.log(entry);
 {
   const gTrade = ctx.STATE.newGame(3, 2);
   for (const p of gTrade.players) p.hand = ctx.STATE.emptyHand();
@@ -300,9 +305,9 @@ check('longest road counts the single segment', g.longest.length === 1,
     gTrade.players[2].hand.forest === 0 && gTrade.players[2].hand.pasture === 1);
   check('AI trade offer and acceptance are logged',
     gTrade.log.length > before &&
-    gTrade.log.some(line => /Mira offered 1 Sheep to Thomas for 1 Wood/.test(line)) &&
-    gTrade.log.some(line => /Mira traded 1 Sheep to Thomas for 1 Wood/.test(line)),
-    gTrade.log.slice(before).join(' | '));
+    gTrade.log.some(line => /Mira offered 1 Sheep to Thomas for 1 Wood/.test(enLog(line))) &&
+    gTrade.log.some(line => /Mira traded 1 Sheep to Thomas for 1 Wood/.test(enLog(line))),
+    gTrade.log.slice(before).map(enLog).join(' | '));
 
   const gDecline = ctx.STATE.newGame(3, 2);
   for (const p of gDecline.players) p.hand = ctx.STATE.emptyHand();
@@ -310,9 +315,37 @@ check('longest road counts the single segment', g.longest.length === 1,
   gDecline.players[2].hand.forest = 1;
   ctx.AI.tradeWithAI(gDecline, 1);
   check('AI trade refusals and final no-trade status are logged',
-    gDecline.log.some(line => /declined/.test(line)) &&
-    gDecline.log.some(line => /completed no player trade this turn/.test(line)),
-    gDecline.log.join(' | '));
+    gDecline.log.some(line => /declined/.test(enLog(line))) &&
+    gDecline.log.some(line => /completed no player trade this turn/.test(enLog(line))),
+    gDecline.log.map(enLog).join(' | '));
+}
+
+// ---- 2:1 harbor rate matches the GIVEN resource (official rule)
+{
+  const gH = ctx.STATE.newGame(2, 2);
+  const me = gH.players[0];
+  // Own one vertex and hang a 2:1 forest port on one of its edges, so the
+  // rate resolution is deterministic (all other near ports are cleared).
+  me.settlements = [0];
+  const here = gH.map.edges.filter(e => e.a === 0 || e.b === 0);
+  for (const e of here) e.port = null;
+  here[0].port = { ratio: 2, res: 'forest' };
+  for (const p of gH.players) p.hand = ctx.STATE.emptyHand();
+  me.hand.forest = 2;
+  me.hand.hill = 2;
+  check('2:1 rate resolves against the GIVEN resource',
+    ctx.RULES.tradeRateFor(gH, 0, 'forest') === 2 &&
+    ctx.RULES.tradeRateFor(gH, 0, 'hill') === 4);
+  check('2 forest -> 1 brick works through the forest harbor',
+    ctx.RULES.harborTrade(gH, 0, 'forest', 2, 'hill') &&
+    me.hand.forest === 0 && me.hand.hill === 3);
+  me.hand.hill = 2;
+  check('2 brick -> 1 forest through the forest harbor is refused',
+    !ctx.RULES.harborTrade(gH, 0, 'hill', 2, 'forest'));
+  me.hand.hill = 4;
+  check('4:1 bank trade unchanged',
+    ctx.RULES.bankTrade(gH, 0, 'hill', 4, 'forest') &&
+    me.hand.forest === 1 && me.hand.hill === 0);
 }
 
 // ---- dev cards: turn restrictions per official rules

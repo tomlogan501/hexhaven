@@ -547,12 +547,18 @@ async function sweep(want, step = 6) {
     // state.js caps g.log at 200 entries and the DOM window is 40, so early
     // lines are evicted long before a 400-turn run ends. Tee them as they
     // appear by watching the array identity (a new game replaces it).
+    // Log entries are stored untranslated ({ k, p }); render them in English
+    // so the phrase assertions below match what the UI shows in EN.
     const tee = [];
+    const teePush = (line) => {
+      const s = (typeof line === 'string') ? line : ctxObj.I18N.log(line);
+      if (!tee.includes(s)) tee.push(s);
+    };
     let prevArr = LIVE() ? LIVE().log : null;
     // Seed with what already exists: btn-debug's click() logs synchronously
     // before this loop's first poll, so those lines would otherwise be missed.
     let prevLen = prevArr ? prevArr.length : 0;
-    if (prevArr) for (const line of prevArr) tee.push(line);
+    if (prevArr) for (const line of prevArr) teePush(line);
     // Bound the run: we assert progress, not a completed game, so a short
     // window is enough to prove the turn loop, economy and AI all work.
     const deadline = Date.now() + 45000;
@@ -566,7 +572,7 @@ async function sweep(want, step = 6) {
         // A new game swapped in a fresh log array; start the tee over so the
         // pre-debug game's lines are not mistaken for this run's.
         tee.length = 0;
-        for (const line of cur) tee.push(line);
+        for (const line of cur) teePush(line);
         prevArr = cur;
         prevLen = cur.length;
       } else if (cur && cur.length > prevLen) {
@@ -574,7 +580,7 @@ async function sweep(want, step = 6) {
         // make prevLen drift; track by identity of the newest tail instead.
         if (cur.length < prevLen) prevLen = cur.length - 1;
         for (let i = Math.max(prevLen, cur.length - 60); i < cur.length; i++) {
-          if (!tee.includes(cur[i])) tee.push(cur[i]);
+          teePush(cur[i]);
         }
         prevLen = cur.length;
       }

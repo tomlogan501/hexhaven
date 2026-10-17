@@ -3,6 +3,25 @@
 All notable changes to Hex Haven. Official-rules fixes reference the rules in
 `rules.md` (§ = section there).
 
+## 2026-10-17 — Localized game log + give-rate test
+
+### Added — The game log follows the UI language (§ UI)
+- Log entries are now stored **untranslated** (`{ k, p }` message keys —
+  `STATE.addLog(g, key, params)`) and rendered through the new `I18N.log()`
+  at display time: switching to FR/ES/DE translates the whole game log, with
+  resource and dev-card names localized too. Previously the log was baked in
+  English at log time (`js/state.js`, `js/rules.js`, `js/ai.js`, `js/main.js`,
+  `js/i18n.js`, en/fr/es/de dictionaries).
+- Plain strings still pass through untouched — debug diagnostics
+  ("Debug: …") remain English-only on purpose.
+
+### Added — Test coverage for the 2:1 harbor fix (§9)
+- `tools/game-test.js`: a synthetic 2:1 forest port proves the rate is
+  resolved against the **given** resource (2 forest → 1 brick works, 2 brick →
+  1 forest is refused) and that the bank 4:1 is unaffected.
+- Log-driven assertions in `game-test.js`/`dom-test.js` now render the stored
+  entries in English via `I18N.log` before matching.
+
 ## 2026-10-17 — Harbor trade fix + bank exchange UI
 
 ### Fixed — 2:1 harbor matched the wrong resource (§9)

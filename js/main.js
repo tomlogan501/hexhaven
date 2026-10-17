@@ -47,7 +47,7 @@
     el.innerHTML = '';
     for (const line of g.log.slice(-40)) {
       const d = document.createElement('div');
-      d.textContent = line;
+      d.textContent = I18N.log(line);   // structured entries render localized
       el.appendChild(d);
     }
     el.scrollTop = el.scrollHeight;
@@ -227,7 +227,7 @@
       return;
     }
     const txt = (b) => Object.entries(b)
-      .map(([r, n]) => n + ' ' + STATE.RES[r].label).join(' + ');
+      .filter(([, n]) => n > 0).map(([r, n]) => [r, n]);
     // Offer to every AI in turn; the first one to accept closes the deal.
     for (const p of g.players) {
       if (p.id === 0) continue;
@@ -238,7 +238,9 @@
         render();
         return;
       }
-      log(`${p.name} declined ${txt(gives)} for ${txt(wants)}.`);
+      log({ k: 'log_human_declined', p: {
+        to: p.name, give: txt(gives), want: txt(wants),
+      } });
     }
     setHint(I18N.t('h_reject'));
     render();
@@ -445,7 +447,7 @@
   // ---- the 7: everyone over seven discards, then the robber moves
   function resolveSeven(rollerId) {
     g.robberFromSeven = true;
-    log('A 7 was rolled — the robber strikes.');
+    log({ k: 'log_seven' });
 
     const toDiscard = RULES.playersToDiscard(g);
     let humanOwes = 0;
@@ -474,7 +476,7 @@
     discardNeed = 0;
     for (const k of Object.keys(discardPick)) delete discardPick[k];
     RULES.discardCards(g, 0, amounts);
-    log(`You discarded ${n} cards after rolling a 7.`);
+    log({ k: 'log_you_discard', p: { n } });
     afterDiscards(0);
   }
 
@@ -533,7 +535,7 @@
     p.hasRolled = true;
     g.phase = 'build';
     setHint(I18N.t('h_rolled', { a, b, t: total }));
-    log(`You rolled ${total}.`);
+    log({ k: 'log_you_roll', p: { n: total } });
     AUDIO.dice();
     render();
 
@@ -559,18 +561,18 @@
         return false;
       }
       if (!RULES.buildRoad(g, 0, id)) return false;
-      log('You built a road.');
+      log({ k: 'log_you_road' });
     } else if (kind === 'settlement') {
       if (!RULES.settlementSpotFree(g, id)) return false;
       // After setup, a settlement must attach to the player's road network.
       if (!RULES.settlementConnects(g, 0, id)) return false;
       if (!RULES.canAfford(p, 'settlement')) return false;
       RULES.buildSettlement(g, 0, id);
-      log('You founded a settlement.');
+      log({ k: 'log_you_settle' });
     } else if (kind === 'city') {
       if (!RULES.canBuildCity(g, 0, id)) return false;
       RULES.buildCity(g, 0, id);
-      log('You built a city.');
+      log({ k: 'log_you_city' });
     } else {
       return false;
     }
@@ -606,7 +608,7 @@
       if (!RULES.settlementSpotFree(g, id)) return false;
       freeBuild(p, 'settlement', id);
       g.phase = 'setup2';
-      log('You founded your first settlement.');
+      log({ k: 'log_you_first_settle' });
       setHint(I18N.t('h_after_settle'));
       AUDIO.build();
       render();
@@ -614,7 +616,7 @@
       if (kind !== 'road') return false;
       if (!RULES.roadBuildable(g, 0, id)) return false;
       freeBuild(p, 'road', id);
-      log('You built your first road.');
+      log({ k: 'log_you_first_road' });
       AUDIO.build();
       RULES.refreshScores(g);
       advanceSetup();
@@ -633,11 +635,11 @@
     const s = AI.bestSettlement(g, p.id, false);
     if (s) {
       freeBuild(p, 'settlement', s.id);
-      log(`${p.name} founded a settlement.`);
+      log({ k: 'log_settle', p: { name: p.name } });
       const r = AI.bestRoad(g, p.id);
       if (r) {
         freeBuild(p, 'road', r.id);
-        log(`${p.name} built a road.`);
+        log({ k: 'log_road', p: { name: p.name } });
       }
     }
     p.hand = saved;
@@ -654,7 +656,7 @@
       g.current = g.setupOrder[0];
       g.dice = null;
       busy = false;
-      log('Everyone is placed. Time to roll.');
+      log({ k: 'log_placed' });
       setHint(I18N.t('h_setup_done'));
       render();
       return;
@@ -693,7 +695,7 @@
         p.hand = saved;
         if (!s) { setHint(I18N.t('h_no_settle')); render(); return; }
         freeBuild(p, 'settlement', s.id);
-        log('You founded your first settlement.');
+        log({ k: 'log_you_first_settle' });
         g.phase = 'setup2';
         RULES.refreshScores(g);
         render();
@@ -705,7 +707,7 @@
         p.hand = saved;
         if (!r) { setHint(I18N.t('h_no_road')); render(); return; }
         freeBuild(p, 'road', r.id);
-        log('You built your first road.');
+        log({ k: 'log_you_first_road' });
         RULES.refreshScores(g);
         advanceSetup();              // may hand over to an AI (sets busy)
         if (busy) return;
@@ -723,7 +725,7 @@
       render();
       return;
     }
-    log(`You bought a ${STATE.DEV_CARDS[card].label} card.`);
+    log({ k: 'log_you_dev_buy', p: { dev: card } });
     setHint(I18N.t('h_drew', { card: I18N.dev(card) }));
     render();
   }
@@ -749,7 +751,7 @@
       }
       return;
     }
-    log(`You played a ${STATE.DEV_CARDS[type].label} card.`);
+    log({ k: 'log_you_dev_play', p: { dev: type } });
     if (RULES.checkWinner(g)) { render(); return; }
     // A Knight summons the robber: let the human place it.
     if (type === 'knight' && g.robberFromSeven) {
@@ -803,7 +805,7 @@
       const total = a + b;
       g.dice = { a, b, total };
       p.hasRolled = true;
-      log(`${p.name} rolled ${total}.`);
+      log({ k: 'log_roll', p: { name: p.name, n: total } });
       if (total !== 7) {
         produce(total);
         RULES.refreshScores(g);
@@ -1316,7 +1318,7 @@
     g.current = g.setupOrder[0];
     GRAPH.reset();
     GRAPH.turnSnapshot(g);   // origin line: everyone starts on 0
-    log('A new island. Place your settlement to begin.');
+    log({ k: 'log_new_island' });
     setHint(I18N.t('h_first_settle'));
     render();
   }
@@ -1361,13 +1363,13 @@
     const city = debugBestCity(pid);
     if (city) {
       RULES.buildCity(g, pid, city.id);
-      log(`${p.name} built a city.`);
+      log({ k: 'log_city', p: { name: p.name } });
       built++;
     } else if (p.settlements.length + p.cities.length < 5) {
       const s = AI.bestSettlement(g, pid);
       if (s) {
         RULES.buildSettlement(g, pid, s.id);
-        log(`${p.name} founded a settlement.`);
+        log({ k: 'log_settle', p: { name: p.name } });
         built++;
       }
     }
@@ -1375,7 +1377,7 @@
       const r = AI.bestRoad(g, pid);
       if (r) {
         RULES.buildRoad(g, pid, r.id);
-        log(`${p.name} built a road.`);
+        log({ k: 'log_road', p: { name: p.name } });
         built++;
       }
     }
@@ -1444,7 +1446,7 @@
             const s = pickSetupSpot('settlement');
             if (s) {
               freeBuild(p, 'settlement', s.id);
-              log('You founded your first settlement.');
+              log({ k: 'log_you_first_settle' });
               g.phase = 'setup2';
             } else {
               break;              // nowhere legal left to play
@@ -1453,7 +1455,7 @@
             const r = pickSetupSpot('road');
             if (r) {
               freeBuild(p, 'road', r.id);
-              log('You built your first road.');
+              log({ k: 'log_you_first_road' });
             }
             advanceSetup();
           }

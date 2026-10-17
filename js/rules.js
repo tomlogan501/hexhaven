@@ -121,7 +121,7 @@ const RULES = (() => {
     g.robber = tileKey;
     const tile = g.map.byKey.get(tileKey);
     if (tile && tile.res !== 'desert') {
-      STATE.addLog(g, `Robber moved to ${tile.res} tile (${tile.num}).`);
+      STATE.addLog(g, 'log_robber_move', { res: tile.res, n: tile.num });
     }
   }
 
@@ -133,7 +133,9 @@ const RULES = (() => {
     const [res] = cardTypes[Math.floor(Math.random() * cardTypes.length)];
     victim.hand[res] -= 1;
     STATE.payout(g, g.players[robberPid], res, 1);
-    STATE.addLog(g, `${g.players[robberPid].name} stole a ${STATE.RES[res].label} from ${victim.name}.`);
+    STATE.addLog(g, 'log_steal', {
+      name: g.players[robberPid].name, res, victim: victim.name,
+    });
     return res;
   }
 
@@ -172,7 +174,7 @@ const RULES = (() => {
     // Official rule: a card bought this turn may not be played this turn.
     // (Victory Point cards are exempt — they may be revealed immediately.)
     p.devBoughtThisTurn.push(card);
-    STATE.addLog(g, `${p.name} bought a ${STATE.DEV_CARDS[card].label} card.`);
+    STATE.addLog(g, 'log_dev_buy', { name: p.name, dev: card });
     return card;
   }
 
@@ -192,7 +194,7 @@ const RULES = (() => {
     if (cardType === 'knight') {
       p.playedKnights += 1;
       updateLargestArmy(g, pid);
-      STATE.addLog(g, `${p.name} played a Knight (${p.playedKnights} total).`);
+      STATE.addLog(g, 'log_knight', { name: p.name, dev: 'knight', n: p.playedKnights });
       g.robberFromSeven = true;
     } else if (cardType === 'yearPlenty') {
       // Official: take any 2 resource cards from the bank. `target` supplies
@@ -207,9 +209,9 @@ const RULES = (() => {
       }
       for (const res of picks) {
         STATE.payout(g, p, res, 1);
-        STATE.addLog(g, `${p.name} took 1 ${STATE.RES[res].label} from the bank.`);
+        STATE.addLog(g, 'log_year_bank', { name: p.name, res });
       }
-      STATE.addLog(g, `${p.name} played Year of Plenty.`);
+      STATE.addLog(g, 'log_year_none', { name: p.name });
     } else if (cardType === 'monopoly') {
       // Official: name ONE resource type and take ALL cards of that type from
       // every other player. `target` names the type; without one the most
@@ -232,19 +234,19 @@ const RULES = (() => {
       }
       if (total > 0) {
         STATE.payout(g, p, res, total);
-        STATE.addLog(g, `${p.name} took ${total} ${STATE.RES[res].label} with Monopoly.`);
+        STATE.addLog(g, 'log_monopoly', { name: p.name, n: total, res });
       }
-      STATE.addLog(g, `${p.name} played Monopoly.`);
+      STATE.addLog(g, 'log_monopoly_none', { name: p.name });
     } else if (cardType === 'roadBuild') {
       // Official: build 2 free roads on this turn. The credits are spent by
       // RULES.buildRoad without touching the player's hand.
       p.freeRoads = (p.freeRoads || 0) + 2;
-      STATE.addLog(g, `${p.name} played Road Building (2 free roads).`);
+      STATE.addLog(g, 'log_roadbuild', { name: p.name });
     } else if (cardType === 'victory') {
       // A revealed VP card is permanent: it leaves the hand and its point
       // is banked on the player.
       p.vpRevealed = (p.vpRevealed || 0) + 1;
-      STATE.addLog(g, `${p.name} revealed a Victory Point card!`);
+      STATE.addLog(g, 'log_vp', { name: p.name });
     }
     void target;
     refreshScores(g);
@@ -259,7 +261,7 @@ const RULES = (() => {
     if (p.playedKnights > g.largestArmy.size) {
       const prevHolder = g.largestArmy.player;
       g.largestArmy = { player: pid, size: p.playedKnights };
-      STATE.addLog(g, `${p.name} has the Largest Army: ${p.playedKnights} knights.`);
+        STATE.addLog(g, 'log_army', { name: p.name, n: p.playedKnights });
       void prevHolder;
     }
   }
@@ -324,10 +326,11 @@ const RULES = (() => {
     if (maxLen >= 5 && leaders.length === 1) {
       const leader = leaders[0];
       if (prev.player === null) {
-        STATE.addLog(g, `${leader.name} has the longest road: ${maxLen}`);
+        STATE.addLog(g, 'log_road_len', { name: leader.name, n: maxLen });
       } else {
-        STATE.addLog(g,
-          `${leader.name} takes the Longest Road from ${g.players[prev.player].name} (${maxLen} segments).`);
+        STATE.addLog(g, 'log_road_take', {
+          name: leader.name, from: g.players[prev.player].name, n: maxLen,
+        });
       }
       g.longest = { player: leader.id, length: maxLen };
       return;
@@ -335,7 +338,7 @@ const RULES = (() => {
     // Nothing qualifies (too short, or a tie among players that is not the
     // holder's): the card goes back to the table.
     if (prev.player !== null) {
-      STATE.addLog(g, `The Longest Road returns to the table.`);
+      STATE.addLog(g, 'log_road_back');
     }
     g.longest = { player: null, length: maxLen };
   }
@@ -424,8 +427,9 @@ const RULES = (() => {
     if (p.hand[giveRes] < n) return false;
     p.hand[giveRes] -= n;
     STATE.payout(g, p, wantRes, 1);
-    STATE.addLog(g, `${p.name} traded ${n} ${STATE.RES[giveRes].label} ` +
-      `for 1 ${STATE.RES[wantRes].label} (harbor ${n}:1).`);
+    STATE.addLog(g, 'log_harbor_trade', {
+      name: p.name, n, res: giveRes, want: wantRes, r: n,
+    });
     return true;
   }
 
@@ -436,8 +440,9 @@ const RULES = (() => {
     if (p.hand[giveRes] < n) return false;
     p.hand[giveRes] -= n;
     STATE.payout(g, p, wantRes, 1);
-    STATE.addLog(g, `${p.name} traded ${n} ${STATE.RES[giveRes].label} ` +
-      `for 1 ${STATE.RES[wantRes].label} at the bank (4:1).`);
+    STATE.addLog(g, 'log_bank_trade', {
+      name: p.name, n, res: giveRes, want: wantRes,
+    });
     return true;
   }
 
@@ -456,9 +461,10 @@ const RULES = (() => {
     }
     for (const [res, n] of Object.entries(give)) { a.hand[res] -= n; b.hand[res] += n; }
     for (const [res, n] of Object.entries(want)) { b.hand[res] -= n; a.hand[res] += n; }
-    const bundleText = bundle => Object.entries(bundle)
-      .map(([res, n]) => `${n} ${STATE.RES[res].label}`).join(' + ');
-    STATE.addLog(g, `${a.name} traded ${bundleText(give)} to ${b.name} for ${bundleText(want)}.`);
+    const bundle = (b) => Object.entries(b)
+      .filter(([, n]) => n > 0).map(([r, n]) => [r, n]);
+    STATE.addLog(g, 'log_partner_trade',
+      { a: a.name, b: b.name, give: bundle(give), want: bundle(want) });
     return true;
   }
 

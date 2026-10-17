@@ -102,8 +102,11 @@ const STATE = (() => {
     return g.players[g.current];
   }
 
-  function addLog(g, msg) {
-    g.log.push(msg);
+  // Log an entry. A plain string is kept as-is; when a params object is
+  // given, the entry is stored UNtranslated as { k, p } and rendered
+  // through I18N.log() — the game log follows the chosen UI language.
+  function addLog(g, msg, params) {
+    g.log.push(params ? { k: msg, p: params } : msg);
     if (g.log.length > 200) g.log.shift();
   }
 

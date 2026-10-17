@@ -168,12 +168,20 @@ const sleep = (ms) => new Promise(r => setTimeout(r, ms));
   await sleep(500);
   fs.writeFileSync('docs/menu-fr.tmp.png',
     Buffer.from((await c.send('Page.captureScreenshot', { format: 'png' })).data, 'base64'));
+  // Close the menu and capture the board: the game log must now render in
+  // French (entries are stored untranslated and localized at render time).
+  await c.eval(`(function(){
+    const o = document.getElementById('optoverlay');
+    if (o) o.classList.remove('open');
+    return true;
+  })()`);
+  await sleep(600);
+  fs.writeFileSync('docs/log-fr.tmp.png',
+    Buffer.from((await c.send('Page.captureScreenshot', { format: 'png' })).data, 'base64'));
   await c.eval(`(function(){
     const s = document.getElementById('lang');
     s.value = 'en';
     s.dispatchEvent(new Event('change'));
-    const o = document.getElementById('optoverlay');
-    if (o) o.classList.remove('open');
     return true;
   })()`);
   await sleep(600);

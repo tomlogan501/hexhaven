@@ -52,6 +52,49 @@ const I18N = (() => {
       tp_bank_pick: 'Pick exactly one resource to give and one to take.',
       tp_bank_need: 'Not enough: a {r}:1 exchange requires {n} {res}.',
 
+      log_discard: '{name} discarded {n} cards after rolling a 7.',
+      log_city: '{name} built a city.',
+      log_settle: '{name} founded a settlement.',
+      log_road: '{name} built a road.',
+      log_offer: '{name} offered {give} to {to} for {want}.',
+      log_declined_res: '{to} declined: not enough {res}.',
+      log_declined_offer: '{to} declined {from}’s offer.',
+      log_withdrew: '{name} withdrew the offer: it was no longer favorable.',
+      log_declined_cant: '{to} declined: the trade could not be completed.',
+      log_no_trade: '{name} completed no player trade this turn.',
+      log_no_offers: '{name} had no player trade offers to make.',
+      log_robber_move: 'Robber moved to a {res} tile ({n}).',
+      log_steal: '{name} stole a {res} from {victim}.',
+      log_dev_buy: '{name} bought a {dev} card.',
+      log_knight: '{name} played a {dev} card ({n} total).',
+      log_year_bank: '{name} took 1 {res} from the bank.',
+      log_year_none: '{name} played Year of Plenty.',
+      log_monopoly: '{name} took {n} {res} with Monopoly.',
+      log_monopoly_none: '{name} played Monopoly.',
+      log_roadbuild: '{name} played Road Building (2 free roads).',
+      log_vp: '{name} revealed a Victory Point card!',
+      log_army: '{name} has the Largest Army: {n} knights.',
+      log_road_len: '{name} has the longest road: {n}',
+      log_road_take: '{name} takes the Longest Road from {from} ({n} segments).',
+      log_road_back: 'The Longest Road returns to the table.',
+      log_harbor_trade: '{name} traded {n} {res} for 1 {want} at the harbor ({r}:1).',
+      log_bank_trade: '{name} traded {n} {res} for 1 {want} at the bank (4:1).',
+      log_partner_trade: '{a} traded {give} to {b} for {want}.',
+      log_seven: 'A 7 was rolled — the robber strikes.',
+      log_you_discard: 'You discarded {n} cards after rolling a 7.',
+      log_roll: '{name} rolled {n}.',
+      log_you_roll: 'You rolled {n}.',
+      log_you_road: 'You built a road.',
+      log_you_settle: 'You founded a settlement.',
+      log_you_city: 'You built a city.',
+      log_you_first_settle: 'You founded your first settlement.',
+      log_you_first_road: 'You built your first road.',
+      log_placed: 'Everyone is placed. Time to roll.',
+      log_human_declined: '{to} declined {give} for {want}.',
+      log_new_island: 'A new island. Place your settlement to begin.',
+      log_you_dev_buy: 'You bought a {dev} card.',
+      log_you_dev_play: 'You played a {dev} card.',
+
       h_roll_begin: 'Click Roll to begin.',
       h_picktool: 'Pick a build tool, then click a highlighted spot.',
       h_setup1: 'Click a highlighted corner to found your settlement (free).',
@@ -146,6 +189,49 @@ const I18N = (() => {
       tp_bank_plan: 'Donner {g} au taux {r}:1 → recevoir 1 {w}.',
       tp_bank_pick: 'Choisissez exactement une ressource à donner et une à recevoir.',
       tp_bank_need: 'Pas assez : un échange {r}:1 requiert {n} {res}.',
+
+      log_discard: '{name} a défaussé {n} cartes après un 7.',
+      log_city: '{name} a construit une ville.',
+      log_settle: '{name} a fondé une colonie.',
+      log_road: '{name} a construit une route.',
+      log_offer: '{name} a offert {give} à {to} contre {want}.',
+      log_declined_res: '{to} a refusé : pas assez de {res}.',
+      log_declined_offer: "{to} a refusé l'offre de {from}.",
+      log_withdrew: "{name} a retiré l'offre : elle n'était plus favorable.",
+      log_declined_cant: '{to} a refusé : l’échange n’a pas pu aboutir.',
+      log_no_trade: "{name} n'a conclu aucun échange entre joueurs ce tour.",
+      log_no_offers: "{name} n'a fait aucune proposition d'échange.",
+      log_robber_move: 'Le voleur s’est déplacé sur une case {res} ({n}).',
+      log_steal: '{name} a volé un {res} à {victim}.',
+      log_dev_buy: '{name} a acheté une carte {dev}.',
+      log_knight: '{name} a joué une carte {dev} ({n} au total).',
+      log_year_bank: '{name} a pris 1 {res} à la banque.',
+      log_year_none: '{name} a joué Année abondante.',
+      log_monopoly: '{name} a pris {n} {res} grâce au Monopole.',
+      log_monopoly_none: '{name} a joué le Monopole.',
+      log_roadbuild: '{name} a joué Construction de routes (2 routes gratuites).',
+      log_vp: '{name} a révélé une carte de Point de Victoire !',
+      log_army: '{name} possède la Plus Grande Armée : {n} chevaliers.',
+      log_road_len: '{name} a la plus longue route : {n}',
+      log_road_take: '{name} prend la Longue Route à {from} ({n} segments).',
+      log_road_back: 'La Longue Route retourne sur la table.',
+      log_harbor_trade: '{name} a échangé {n} {res} contre 1 {want} au port ({r}:1).',
+      log_bank_trade: '{name} a échangé {n} {res} contre 1 {want} à la banque (4:1).',
+      log_partner_trade: '{a} a échangé {give} à {b} contre {want}.',
+      log_seven: 'Un 7 est sorti — le voleur frappe.',
+      log_you_discard: 'Vous avez défaussé {n} cartes après un 7.',
+      log_roll: '{name} a lancé {n}.',
+      log_you_roll: 'Vous avez lancé {n}.',
+      log_you_road: 'Vous avez construit une route.',
+      log_you_settle: 'Vous avez fondé une colonie.',
+      log_you_city: 'Vous avez construit une ville.',
+      log_you_first_settle: 'Vous avez fondé votre première colonie.',
+      log_you_first_road: 'Vous avez construit votre première route.',
+      log_placed: 'Tout le monde est placé. À vous de lancer.',
+      log_human_declined: '{to} a refusé {give} contre {want}.',
+      log_new_island: 'Nouvelle île. Placez votre colonie pour commencer.',
+      log_you_dev_buy: 'Vous avez acheté une carte {dev}.',
+      log_you_dev_play: 'Vous avez joué une carte {dev}.',
 
       h_roll_begin: 'Cliquez sur « Lancer les dés » pour commencer.',
       h_picktool: 'Choisissez un outil de construction, puis cliquez sur un point surligné.',
@@ -243,6 +329,49 @@ const I18N = (() => {
       tp_bank_pick: 'Elige exactamente un recurso para dar y uno para recibir.',
       tp_bank_need: 'No basta: un intercambio {r}:1 requiere {n} {res}.',
 
+      log_discard: '{name} descartó {n} cartas tras tirar un 7.',
+      log_city: '{name} construyó una ciudad.',
+      log_settle: '{name} fundó un asentamiento.',
+      log_road: '{name} construyó un camino.',
+      log_offer: '{name} ofreció {give} a {to} por {want}.',
+      log_declined_res: '{to} rechazó: no hay suficiente {res}.',
+      log_declined_offer: '{to} rechazó la oferta de {from}.',
+      log_withdrew: '{name} retiró la oferta: ya no le convenía.',
+      log_declined_cant: '{to} rechazó: el intercambio no se pudo completar.',
+      log_no_trade: '{name} no cerró ningún intercambio entre jugadores este turno.',
+      log_no_offers: '{name} no tenía ofertas de intercambio que hacer.',
+      log_robber_move: 'El ladrón se movió a una casilla de {res} ({n}).',
+      log_steal: '{name} robó un {res} a {victim}.',
+      log_dev_buy: '{name} compró una carta de {dev}.',
+      log_knight: '{name} jugó una carta de {dev} ({n} en total).',
+      log_year_bank: '{name} tomó 1 {res} del banco.',
+      log_year_none: '{name} jugó Año de la Abundancia.',
+      log_monopoly: '{name} tomó {n} {res} con el Monopolio.',
+      log_monopoly_none: '{name} jugó el Monopolio.',
+      log_roadbuild: '{name} jugó Construcción de caminos (2 caminos gratis).',
+      log_vp: '¡{name} reveló una carta de Punto de Victoria!',
+      log_army: '{name} tiene el Ejército más grande: {n} caballeros.',
+      log_road_len: '{name} tiene el camino más largo: {n}',
+      log_road_take: '{name} toma el Camino más largo de {from} ({n} segmentos).',
+      log_road_back: 'El Camino más largo vuelve a la mesa.',
+      log_harbor_trade: '{name} cambió {n} {res} por 1 {want} en el puerto ({r}:1).',
+      log_bank_trade: '{name} cambió {n} {res} por 1 {want} en el banco (4:1).',
+      log_partner_trade: '{a} cambió {give} a {b} por {want}.',
+      log_seven: 'Salió un 7 — el ladrón ataca.',
+      log_you_discard: 'Descartaste {n} cartas tras tirar un 7.',
+      log_roll: '{name} tiró {n}.',
+      log_you_roll: 'Tiraste {n}.',
+      log_you_road: 'Construiste un camino.',
+      log_you_settle: 'Fundaste un asentamiento.',
+      log_you_city: 'Construiste una ciudad.',
+      log_you_first_settle: 'Fundaste tu primer asentamiento.',
+      log_you_first_road: 'Construiste tu primer camino.',
+      log_placed: 'Todos están colocados. Hora de tirar.',
+      log_human_declined: '{to} rechazó {give} por {want}.',
+      log_new_island: 'Isla nueva. Coloca tu asentamiento para empezar.',
+      log_you_dev_buy: 'Compraste una carta de {dev}.',
+      log_you_dev_play: 'Jugaste una carta de {dev}.',
+
       h_roll_begin: 'Haz clic en «Lanzar dados» para empezar.',
       h_picktool: 'Elige una herramienta de construcción y haz clic en un punto resaltado.',
       h_setup1: 'Haz clic en una esquina resaltada para fundar tu colonia (gratis).',
@@ -337,6 +466,49 @@ const I18N = (() => {
       tp_bank_plan: '{g} zum Kurs {r}:1 geben → 1 {w} nehmen.',
       tp_bank_pick: 'Wähle genau eine Ressource zum Geben und eine zum Nehmen.',
       tp_bank_need: 'Nicht genug: ein {r}:1-Tausch benötigt {n} {res}.',
+
+      log_discard: '{name} hat {n} Karten nach einer 7 abgelegt.',
+      log_city: '{name} hat eine Stadt gebaut.',
+      log_settle: '{name} hat eine Siedlung gegründet.',
+      log_road: '{name} hat eine Straße gebaut.',
+      log_offer: '{name} hat {to} {give} für {want} angeboten.',
+      log_declined_res: '{to} hat abgelehnt: nicht genug {res}.',
+      log_declined_offer: '{to} hat das Angebot von {from} abgelehnt.',
+      log_withdrew: '{name} hat das Angebot zurückgezogen: es war nicht mehr günstig.',
+      log_declined_cant: '{to} hat abgelehnt: der Tausch konnte nicht abgeschlossen werden.',
+      log_no_trade: '{name} hat in diesem Zug keinen Spielertausch abgeschlossen.',
+      log_no_offers: '{name} hatte keine Spielertauschangebote zu machen.',
+      log_robber_move: 'Der Räuber ist auf ein {res}-Feld ({n}) gezogen.',
+      log_steal: '{name} hat {victim} ein {res} gestohlen.',
+      log_dev_buy: '{name} hat eine {dev}-Karte gekauft.',
+      log_knight: '{name} hat eine {dev}-Karte gespielt ({n} insgesamt).',
+      log_year_bank: '{name} hat 1 {res} von der Bank genommen.',
+      log_year_none: '{name} hat Jahr des Reichtums gespielt.',
+      log_monopoly: '{name} hat {n} {res} mit Monopol genommen.',
+      log_monopoly_none: '{name} hat Monopol gespielt.',
+      log_roadbuild: '{name} hat Straßenbau gespielt (2 kostenlose Straßen).',
+      log_vp: '{name} hat eine Siegpunktkarte aufgedeckt!',
+      log_army: '{name} hat die Größte Armee: {n} Ritter.',
+      log_road_len: '{name} hat die längste Handelsstraße: {n}',
+      log_road_take: '{name} nimmt {from} die Längste Handelsstraße ab ({n} Segmente).',
+      log_road_back: 'Die Längste Handelsstraße geht zurück auf den Tisch.',
+      log_harbor_trade: '{name} hat {n} {res} für 1 {want} am Hafen ({r}:1) getauscht.',
+      log_bank_trade: '{name} hat {n} {res} für 1 {want} an der Bank getauscht (4:1).',
+      log_partner_trade: '{a} hat {b} {give} für {want} getauscht.',
+      log_seven: 'Eine 7 wurde gewürfelt — der Räuber schlägt zu.',
+      log_you_discard: 'Du hast {n} Karten nach einer 7 abgelegt.',
+      log_roll: '{name} hat {n} gewürfelt.',
+      log_you_roll: 'Du hast {n} gewürfelt.',
+      log_you_road: 'Du hast eine Straße gebaut.',
+      log_you_settle: 'Du hast eine Siedlung gegründet.',
+      log_you_city: 'Du hast eine Stadt gebaut.',
+      log_you_first_settle: 'Du hast deine erste Siedlung gegründet.',
+      log_you_first_road: 'Du hast deine erste Straße gebaut.',
+      log_placed: 'Alle sind platziert. Jetzt wird gewürfelt.',
+      log_human_declined: '{to} hat {give} für {want} abgelehnt.',
+      log_new_island: 'Eine neue Insel. Platziere deine Siedlung, um zu beginnen.',
+      log_you_dev_buy: 'Du hast eine {dev}-Karte gekauft.',
+      log_you_dev_play: 'Du hast eine {dev}-Karte gespielt.',
 
       h_roll_begin: 'Klicke auf „Würfeln“, um zu beginnen.',
       h_picktool: 'Wähle ein Bauwerkzeug und klicke auf eine markierte Stelle.',
@@ -434,8 +606,38 @@ const I18N = (() => {
     for (const fn of listeners) fn();
   }
 
+  // ---- game log ----------------------------------------------------------
+  // Log entries are STORED untranslated: { k: 'log_x', p: { name, n, ... } }.
+  // Plain strings (debug lines) pass through untouched. At render time the
+  // params get localized — 'res' params become resource labels, 'dev' params
+  // become dev-card names, and arrays are "n Label + n Label" bundles.
+  const RES_KINDS = ['forest', 'pasture', 'field', 'hill', 'mount'];
+  const DEV_KINDS = ['knight', 'monopoly', 'yearPlenty', 'roadBuilding', 'victory'];
+
+  function param(v) {
+    if (Array.isArray(v)) {
+      return v.map(([r, n]) => n + ' ' + res(r)).join(' + ');
+    }
+    return String(v);
+  }
+
+  function log(entry) {
+    if (typeof entry === 'string') return entry;
+    const p = {};
+    for (const [key, v] of Object.entries((entry && entry.p) || {})) {
+      if (key === 'res' || key === 'want') {
+        p[key] = RES_KINDS.includes(v) ? res(v) : param(v);
+      } else if (key === 'dev') {
+        p[key] = DEV_KINDS.includes(v) ? dev(v) : param(v);
+      } else {
+        p[key] = param(v);
+      }
+    }
+    return t((entry && entry.k) || '', p);
+  }
+
   return {
-    t, res, dev, yesNo, set, applyStatic,
+    t, res, dev, yesNo, set, applyStatic, log,
     get: () => current, langs: LANGS.slice(),
     onChange: (fn) => listeners.push(fn),
   };

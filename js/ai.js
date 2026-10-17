@@ -141,7 +141,7 @@ const AI = (() => {
       p.hand[res] -= 1;
       remaining -= 1;
     }
-    STATE.addLog(g, `${p.name} discarded ${toDiscard} cards after rolling a 7.`);
+    STATE.addLog(g, 'log_discard', { name: p.name, n: toDiscard });
   }
 
   // Play out a whole turn, then hand control back.
@@ -171,7 +171,7 @@ const AI = (() => {
       const city = bestCity(g, pid);
       if (city !== null) {
         RULES.buildCity(g, pid, city);
-        STATE.addLog(g, `${p.name} built a city.`);
+        STATE.addLog(g, 'log_city', { name: p.name });
         built++; acted = true;
         if (built < maxBuilds) return step();
         return finish();
@@ -180,7 +180,7 @@ const AI = (() => {
         const s = bestSettlement(g, pid);
         if (s) {
           RULES.buildSettlement(g, pid, s.id);
-          STATE.addLog(g, `${p.name} founded a settlement.`);
+          STATE.addLog(g, 'log_settle', { name: p.name });
           built++; acted = true;
           if (built < maxBuilds) return step();
           return finish();
@@ -189,7 +189,7 @@ const AI = (() => {
       const r = bestRoad(g, pid);
       if (r) {
         RULES.buildRoad(g, pid, r.id);
-        STATE.addLog(g, `${p.name} built a road.`);
+        STATE.addLog(g, 'log_road', { name: p.name });
         built++; acted = true;
         if (built < maxBuilds) return step();
         return finish();
@@ -211,8 +211,9 @@ const AI = (() => {
     const player = g.players[pid];
     if (!player.isAI) return false;
     const needs = ['forest', 'hill', 'field', 'pasture', 'mount'];
-    const bundleText = bundle => Object.entries(bundle)
-      .map(([res, n]) => `${n} ${STATE.RES[res].label}`).join(' + ');
+    // Bundles are recorded as [kind, count] pairs so the log can render
+    // them in the player's language.
+    const bundle = b => Object.entries(b).filter(([, n]) => n > 0);
     let madeOffer = false;
     for (const targetId of g.players.map(p => p.id)) {
       if (targetId === pid || !g.players[targetId].isAI) continue;
@@ -224,27 +225,30 @@ const AI = (() => {
           const receives = { [want]: 1 };
           const gives = { [give]: 1 };
           madeOffer = true;
-          STATE.addLog(g, `${player.name} offered ${bundleText(gives)} to ${partner.name} for ${bundleText(receives)}.`);
+          STATE.addLog(g, 'log_offer', {
+            name: player.name, to: partner.name,
+            give: bundle(gives), want: bundle(receives),
+          });
           if (partner.hand[want] < 1) {
-            STATE.addLog(g, `${partner.name} declined: not enough ${STATE.RES[want].label}.`);
+            STATE.addLog(g, 'log_declined_res', { to: partner.name, res: want });
             continue;
           }
           if (!wantsTrade(g, targetId, gives, receives)) {
-            STATE.addLog(g, `${partner.name} declined ${player.name}'s offer.`);
+            STATE.addLog(g, 'log_declined_offer',
+              { to: partner.name, from: player.name });
             continue;
           }
           if (!wantsTrade(g, pid, receives, gives)) {
-            STATE.addLog(g, `${player.name} withdrew the offer: it was no longer favorable.`);
+            STATE.addLog(g, 'log_withdrew', { name: player.name });
             continue;
           }
           if (RULES.partnerTrade(g, pid, targetId, gives, receives)) return true;
-          STATE.addLog(g, `${partner.name} declined: the trade could not be completed.`);
+          STATE.addLog(g, 'log_declined_cant', { to: partner.name });
         }
       }
     }
-    STATE.addLog(g, madeOffer
-      ? `${player.name} completed no player trade this turn.`
-      : `${player.name} had no player trade offers to make.`);
+    STATE.addLog(g, madeOffer ? 'log_no_trade' : 'log_no_offers',
+      { name: player.name });
     return false;
   }
 
