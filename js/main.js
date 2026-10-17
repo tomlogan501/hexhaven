@@ -420,7 +420,6 @@
     g.phase = 'build';
     setHint(`You rolled ${a} + ${b} = ${total}.`);
     log(`You rolled ${total}.`);
-    AUDIO.dice();
     render();
 
     if (total === 7) {
@@ -660,7 +659,6 @@
       g.dice = { a, b, total };
       p.hasRolled = true;
       log(`${p.name} rolled ${total}.`);
-      AUDIO.dice();
       if (total !== 7) {
         produce(total);
         RULES.refreshScores(g);

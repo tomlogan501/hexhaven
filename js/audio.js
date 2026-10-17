@@ -160,7 +160,7 @@ const AUDIO = (() => {
 
   // Two dice tumbling on the table.
   function dice() {
-    if (!live()) return;
+    if (!sfxOn || !live()) return;
     const t0 = ctx.currentTime;
     for (let i = 0; i < 3; i++) {
       noiseBurst(t0 + i * 0.09, 0.07, 1800 + Math.random() * 900, 0.25);
@@ -171,13 +171,13 @@ const AUDIO = (() => {
 
   // Wooden pieces: a soft double tock; the city adds a two-note chime.
   function build() {
-    if (!live()) return;
+    if (!sfxOn || !live()) return;
     const t0 = ctx.currentTime;
     tock(t0, 300); tock(t0 + 0.07, 210);
   }
 
   function city() {
-    if (!live()) return;
+    if (!sfxOn || !live()) return;
     const t0 = ctx.currentTime;
     tock(t0, 260); tock(t0 + 0.08, 180);
     tone(sfxBus, 'triangle', 659.26, t0 + 0.16, 0.5, 0.12, 0.2);
@@ -186,14 +186,14 @@ const AUDIO = (() => {
 
   // Low dissonant drone when the robber strikes.
   function robber() {
-    if (!live()) return;
+    if (!sfxOn || !live()) return;
     const t0 = ctx.currentTime;
     tone(sfxBus, 'sawtooth', 82.41, t0, 0.9, 0.12, 0);
     tone(sfxBus, 'sawtooth', 87.31, t0, 0.9, 0.10, 0);
   }
 
   function win() {
-    if (!live()) return;
+    if (!sfxOn || !live()) return;
     const t0 = ctx.currentTime;
     [523.25, 659.26, 783.99, 1046.50].forEach((f, i) =>
       tone(sfxBus, 'triangle', f, t0 + i * 0.13, 0.9, 0.14, i % 2 ? 0.3 : -0.3));
