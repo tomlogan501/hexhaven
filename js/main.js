@@ -184,7 +184,6 @@
       if (p.id === 0) continue;
       if (AI.wantsTrade(g, p.id, gives, wants) &&
           RULES.partnerTrade(g, 0, p.id, gives, wants)) {
-        log(`Trade with ${p.name}: you gave ${txt(gives)} for ${txt(wants)}.`);
         AUDIO.build();
         trade = null;
         render();
