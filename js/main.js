@@ -420,6 +420,7 @@
     g.phase = 'build';
     setHint(`You rolled ${a} + ${b} = ${total}.`);
     log(`You rolled ${total}.`);
+    AUDIO.dice();
     render();
 
     if (total === 7) {

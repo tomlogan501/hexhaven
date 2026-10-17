@@ -42,7 +42,7 @@ const AUDIO = (() => {
     lp.type = 'lowpass'; lp.frequency.value = 1400;
     musicBus.connect(lp); lp.connect(master); lp.connect(delay);
     // SFX bus feeds the echo too, but stays bright.
-    sfxBus = ctx.createGain(); sfxBus.gain.value = 0.9;
+    sfxBus = ctx.createGain(); sfxBus.gain.value = sfxOn ? 0.9 : 0;
     sfxBus.connect(master); sfxBus.connect(delay);
     return true;
   }
@@ -158,13 +158,12 @@ const AUDIO = (() => {
     src.start(t0); src.stop(t0 + dur + 0.02);
   }
 
-  // Two dice tumbling on the table.
   function dice() {
     if (!sfxOn || !live()) return;
     const t0 = ctx.currentTime;
-    for (let i = 0; i < 3; i++) {
-      noiseBurst(t0 + i * 0.09, 0.07, 1800 + Math.random() * 900, 0.25);
-    }
+    tone(sfxBus, 'triangle', 660, t0, 0.12, 0.22, -0.2);
+    tone(sfxBus, 'triangle', 880, t0 + 0.08, 0.15, 0.18, 0.2);
+    tone(sfxBus, 'sine', 523.25, t0 + 0.18, 0.22, 0.16, 0);
   }
 
   function tock(t0, f) { tone(sfxBus, 'sine', f, t0, 0.16, 0.3, 0); }
@@ -209,7 +208,15 @@ const AUDIO = (() => {
     return volume;
   }
 
-  function setSfx(on) { sfxOn = !!on; return sfxOn; }
+  function setSfx(on) {
+    sfxOn = !!on;
+    if (sfxBus && ctx) {
+      sfxBus.gain.cancelScheduledValues(ctx.currentTime);
+      sfxBus.gain.setValueAtTime(sfxBus.gain.value, ctx.currentTime);
+      sfxBus.gain.linearRampToValueAtTime(sfxOn ? 0.9 : 0, ctx.currentTime + 0.05);
+    }
+    return sfxOn;
+  }
 
   return {
     start, stop, toggle, isPlaying: () => playing,
