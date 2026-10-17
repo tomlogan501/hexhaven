@@ -220,7 +220,7 @@ const LIVE = () => ctxObj.__LIVE;
 
 // ---- load modules
 const EX = {
-  'hex.js': 'HEX', 'map.js': 'MAPGEN', 'state.js': 'STATE',
+  'hex.js': 'HEX', 'i18n.js': 'I18N', 'map.js': 'MAPGEN', 'state.js': 'STATE',
   'rules.js': 'RULES', 'render.js': 'RENDER', 'ai.js': 'AI',
   'audio.js': 'AUDIO', 'art.js': 'ART',
 };

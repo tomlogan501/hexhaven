@@ -12,9 +12,9 @@
 <div id="app">
   <header id="topbar">
     <h1>Hex Haven</h1>
-    <div id="status">Generating the island…</div>
+    <div id="status" data-i18n="status_loading">Generating the island…</div>
     <div id="turninfo"></div>
-    <button class="btn ghost" id="btn-log">Log</button>
+    <button class="btn ghost" id="btn-log" data-i18n="btn_log">Log</button>
   </header>
 
   <!-- The board owns the screen. HUD panels float above it,
@@ -23,13 +23,13 @@
     <canvas id="board"></canvas>
 
     <section class="hud" id="hud-players">
-      <h3>Players</h3>
+      <h3 data-i18n="panel_players">Players</h3>
       <div id="players"></div>
       <p class="hint" id="boardinfo"></p>
     </section>
 
     <section class="hud" id="hud-log">
-      <h3>Log</h3>
+      <h3 data-i18n="panel_log">Log</h3>
       <div id="log"></div>
     </section>
 
@@ -45,21 +45,21 @@
     <section class="hud" id="hud-hand">
       <div class="handbar">
         <div class="chips" id="buildbar">
-          <button class="btn" id="build-settlement" data-build="settlement">Settlement</button>
-          <button class="btn" id="build-road" data-build="road">Road</button>
-          <button class="btn" id="build-city" data-build="city">City</button>
-          <button class="btn" id="btn-dev">Dev card</button>
+          <button class="btn" id="build-settlement" data-build="settlement" data-i18n="btn_settlement">Settlement</button>
+          <button class="btn" id="build-road" data-build="road" data-i18n="btn_road">Road</button>
+          <button class="btn" id="build-city" data-build="city" data-i18n="btn_city">City</button>
+          <button class="btn" id="btn-dev" data-i18n="btn_dev">Dev card</button>
         </div>
         <div class="chips">
-          <button class="btn primary" id="btn-roll">Roll dice</button>
-          <button class="btn" id="btn-trade">Trade</button>
-          <button class="btn" id="btn-pass">End turn</button>
+          <button class="btn primary" id="btn-roll" data-i18n="btn_roll">Roll dice</button>
+          <button class="btn" id="btn-trade" data-i18n="btn_trade">Trade</button>
+          <button class="btn" id="btn-pass" data-i18n="btn_pass">End turn</button>
         </div>
         <div class="chips" id="devcards"></div>
       </div>
       <div class="hintline">
-        <p class="hint" id="rollresult">Click Roll to begin.</p>
-        <p class="hint" id="buildhint">Pick a build tool, then click a highlighted spot.</p>
+        <p class="hint" id="rollresult" data-i18n="h_roll_begin">Click Roll to begin.</p>
+        <p class="hint" id="buildhint" data-i18n="h_picktool">Pick a build tool, then click a highlighted spot.</p>
       </div>
       <div id="discardpanel" class="hidden">
         <p class="hint warn" id="discarthint"></p>
@@ -67,18 +67,18 @@
       <!-- Player-to-player trade panel, shown centred over the board while
            an offer is being composed. -->
       <section class="hud hidden" id="tradepanel">
-        <h3>Trade with players</h3>
-        <p class="hint" id="tradehint">Click chips to set quantities.</p>
-        <div class="traderow"><span class="tradelabel">You give</span>
+        <h3 data-i18n="tp_title">Trade with players</h3>
+        <p class="hint" id="tradehint" data-i18n="tp_hint">Click chips to set quantities.</p>
+        <div class="traderow"><span class="tradelabel" data-i18n="tp_give">You give</span>
           <div id="trade-give" class="chips"></div>
         </div>
-        <div class="traderow"><span class="tradelabel">You get</span>
+        <div class="traderow"><span class="tradelabel" data-i18n="tp_get">You get</span>
           <div id="trade-want" class="chips"></div>
         </div>
         <div class="chips">
-          <button class="btn primary" id="btn-offer">Offer</button>
-          <button class="btn" id="btn-trade-clear">Clear</button>
-          <button class="btn" id="btn-trade-close">Close</button>
+          <button class="btn primary" id="btn-offer" data-i18n="tp_offer">Offer</button>
+          <button class="btn" id="btn-trade-clear" data-i18n="tp_clear">Clear</button>
+          <button class="btn" id="btn-trade-close" data-i18n="tp_close">Close</button>
         </div>
       </section>
 
@@ -99,34 +99,68 @@
       <button class="btn gear" id="btn-menu" title="Options">&#9881;</button>
     </section>
 
-    <!-- Options overlay: a centred menu card over a dimmed backdrop
-         (closes on the ✕ button, a backdrop click or Escape). -->
-    <div id="optoverlay">
-      <div id="optmenu" role="dialog" aria-label="Options">
+    <!-- Principal menu: a centred card over a dimmed backdrop, shown at
+         boot and reopened with the floating gear. Title, play, rules &
+         objectives, language and options in one place. -->
+    <div id="optoverlay" class="open">
+      <div id="optmenu" role="dialog" aria-label="Main menu">
         <div class="opttop">
-          <h3>Options</h3>
+          <h2 class="mtitle"><span>Hex</span> Haven</h2>
           <button class="btn ghost" id="btn-opt-close" title="Close">&#10005;</button>
         </div>
+        <button class="btn primary big" id="btn-play" data-i18n="m_play">Play</button>
+        <button class="btn big" id="btn-rules" data-i18n="m_rules">Rules &amp; objectives</button>
+        <label class="optrow"><span data-i18n="m_lang">Language</span>
+          <select id="lang">
+            <option value="en" selected>English</option>
+            <option value="fr">Français</option>
+            <option value="es">Español</option>
+            <option value="de">Deutsch</option>
+          </select>
+        </label>
+        <div class="msep" data-i18n-title="m_lang"></div>
         <button class="btn ghost" id="btn-music">Music: off</button>
         <button class="btn ghost" id="btn-sfx">SFX: on</button>
-        <label class="optrow">Volume
+        <label class="optrow"><span data-i18n="vol">Volume</span>
           <input type="range" id="volume" min="0" max="100" value="70">
         </label>
-        <label class="optrow">AI opponents
+        <label class="optrow"><span data-i18n="ai_opponents">AI opponents</span>
           <select id="opponent-count">
             <option value="1">1</option>
             <option value="2" selected>2</option>
             <option value="3">3</option>
           </select>
         </label>
-        <label class="optrow">Island size
+        <label class="optrow"><span data-i18n="island_size">Island size</span>
           <select id="island-size">
             <option value="standard" selected>Standard</option>
-            <option value="xl">XL (double tiles)</option>
+            <option value="xl" data-i18n="island_xl">XL (double tiles)</option>
           </select>
         </label>
-        <button class="btn ghost" id="btn-new">New game</button>
+        <button class="btn ghost" id="btn-new" data-i18n="btn_new">New game</button>
         <button class="btn ghost" id="btn-debug">Debug: auto-play</button>
+      </div>
+    </div>
+
+    <!-- Rules & objectives panel: same overlay pattern as the menu. -->
+    <div id="rulesoverlay">
+      <div id="rulespanel" role="dialog" aria-label="Rules">
+        <div class="opttop">
+          <h3 data-i18n="rules_title">Rules &amp; objectives</h3>
+          <button class="btn ghost" id="btn-rules-close" title="Close">&#10005;</button>
+        </div>
+        <ul class="ruleslist">
+          <li data-i18n="r_goal"></li>
+          <li data-i18n="r_vp"></li>
+          <li data-i18n="r_turn"></li>
+          <li data-i18n="r_seven"></li>
+          <li data-i18n="r_build"></li>
+          <li data-i18n="r_harbor"></li>
+          <li data-i18n="r_dev"></li>
+          <li data-i18n="r_trade"></li>
+          <li data-i18n="r_end"></li>
+        </ul>
+        <button class="btn primary" id="btn-rules-ok" data-i18n="rules_close">Close</button>
       </div>
     </div>
   </main>
@@ -162,6 +196,7 @@ if (location.search.indexOf('camtrade') >= 0) {
 }
 </script>
 <script src="js/hex.js"></script>
+<script src="js/i18n.js"></script>
 <script src="js/map.js"></script>
 <script src="js/state.js"></script>
 <script src="js/rules.js"></script>

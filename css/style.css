@@ -166,8 +166,8 @@ body {
   flex-direction: column;
   align-items: stretch;
   gap: 6px;
-  padding: 12px 14px;
-  min-width: 250px;
+  padding: 14px 16px;
+  min-width: 300px;
   max-width: 92vw;
   /* Same panel chrome as the other HUD boxes. */
   background: linear-gradient(160deg, rgba(15, 23, 34, .97), rgba(8, 14, 22, .95));
@@ -175,6 +175,23 @@ body {
   border-radius: 12px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, .55), inset 0 1px 0 rgba(255, 255, 255, .06);
   z-index: 41;
+}
+/* Main-menu heading: the title of the game above the actions. */
+.mtitle {
+  margin: 0;
+  font-size: 21px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.mtitle span { color: var(--gold); }
+.mtitle::before { content: '⬡ '; color: var(--gold); }
+.btn.big { padding: 9px 14px; font-size: 14px; }
+#optmenu .btn.primary { margin-bottom: 2px; }
+.msep {
+  height: 1px;
+  background: var(--edge);
+  margin: 6px 0;
 }
 .opttop {
   display: flex;
@@ -188,6 +205,40 @@ body {
   font-size: 14px;
   letter-spacing: .4px;
   color: var(--gold);
+}
+
+/* Rules & objectives panel: same overlay pattern as the main menu. */
+#rulesoverlay {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(3, 7, 12, .62);
+  backdrop-filter: blur(3px);
+  z-index: 40;
+}
+#rulesoverlay.open { display: flex; }
+#rulespanel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
+  width: min(560px, 94vw);
+  max-height: 84vh;
+  overflow-y: auto;
+  background: linear-gradient(160deg, rgba(15, 23, 34, .97), rgba(8, 14, 22, .95));
+  border: 1px solid var(--edge);
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .55), inset 0 1px 0 rgba(255, 255, 255, .06);
+  z-index: 41;
+}
+.ruleslist { margin: 0; padding-left: 18px; display: grid; gap: 7px; }
+.ruleslist li { font-size: 13px; line-height: 1.45; color: var(--ink); }
+#rulespanel .btn.primary { align-self: flex-end; }
+#optmenu .btn.ghost, #rulespanel .btn.ghost {
+  padding: 5px 10px;
+  font-size: 12px;
 }
 .optrow {
   display: flex;

@@ -61,24 +61,26 @@
     const el = $('status');
     if (!el) return;
     if (g.winner) {
-      el.textContent = `${g.winner.name} wins with ${g.winner.score} victory points!`;
+      el.textContent = I18N.t('status_winner',
+        { name: g.winner.name, n: g.winner.score });
       return;
     }
     const p = STATE.currentPlayer(g);
     if (discardNeed > 0) {
-      el.textContent = `${p.name} must discard ${discardNeed} cards`;
+      el.textContent = I18N.t('status_discard',
+        { name: p.name, n: discardNeed });
     } else if (g.phase === 'setup1') {
-      el.textContent = `${p.name}: place a settlement`;
+      el.textContent = I18N.t('status_setup1', { name: p.name });
     } else if (g.phase === 'setup2') {
-      el.textContent = `${p.name}: place a road`;
+      el.textContent = I18N.t('status_setup2', { name: p.name });
     } else if (g.phase === 'robber') {
-      el.textContent = `${p.name}: move the robber`;
+      el.textContent = I18N.t('status_robber', { name: p.name });
     } else if (g.phase === 'roll') {
-      el.textContent = `${p.name}'s turn — roll the dice`;
+      el.textContent = I18N.t('status_roll', { name: p.name });
     } else if (g.phase === 'build') {
-      el.textContent = `${p.name}'s turn — build or end turn`;
+      el.textContent = I18N.t('status_build', { name: p.name });
     } else {
-      el.textContent = `${p.name}'s turn`;
+      el.textContent = I18N.t('status_turn', { name: p.name });
     }
   }
 
@@ -150,7 +152,7 @@
   // ---- player-to-player trade panel -------------------------------------
   function bundleText(b) {
     return Object.entries(b).filter(([, n]) => n > 0)
-      .map(([res, n]) => n + ' ' + STATE.RES[res].label).join(' + ');
+      .map(([res, n]) => n + ' ' + I18N.res(res)).join(' + ');
   }
 
   function renderTradePanel() {
@@ -181,9 +183,10 @@
     buildRow('trade-want', trade.want);
     const hint = $('tradehint');
     if (hint) {
-      hint.textContent = 'Offer: ' + (bundleText(trade.give) || 'nothing') +
-        ' \u2192 ' + (bundleText(trade.want) || 'nothing') +
-        '. Click a chip to raise its count.';
+      hint.textContent = I18N.t('tp_offerpart', {
+        g: bundleText(trade.give) || I18N.t('tp_nothing'),
+        w: bundleText(trade.want) || I18N.t('tp_nothing'),
+      });
     }
   }
 
@@ -193,7 +196,7 @@
     for (const [res, n] of Object.entries(trade.give)) if (n > 0) gives[res] = n;
     for (const [res, n] of Object.entries(trade.want)) if (n > 0) wants[res] = n;
     if (!Object.keys(gives).length || !Object.keys(wants).length) {
-      setHint('Set at least one card to give and one to get.');
+      setHint(I18N.t('h_trade_set'));
       return;
     }
     const txt = (b) => Object.entries(b)
@@ -210,7 +213,7 @@
       }
       log(`${p.name} declined ${txt(gives)} for ${txt(wants)}.`);
     }
-    setHint('Nobody accepted. Sweeten the offer or close the panel.');
+    setHint(I18N.t('h_reject'));
     render();
   }
 
@@ -235,7 +238,7 @@
       // word and keep just the coloured dot + count (see CSS).
       const label = document.createElement('span');
       label.className = 'reslabel';
-      label.textContent = info.label;
+      label.textContent = I18N.res(res);
       const count = document.createElement('span');
       count.className = 'rescount';
       count.textContent = '×' + p.hand[res] + (picked > 0 ? ' (−' + picked + ')' : '');
@@ -248,8 +251,8 @@
     if (panel && hint) {
       panel.classList.toggle('hidden', discardNeed <= 0);
       hint.textContent = discardNeed > 0
-        ? `Discard ${discardNeed} card${discardNeed === 1 ? '' : 's'}: ` +
-          `click the chips below (${pickedCount()}/${discardNeed} chosen).`
+        ? I18N.t('h_discard_need',
+            { n: discardNeed, p: pickedCount(), s: discardNeed === 1 ? '' : 's' })
         : '';
     }
   }
@@ -265,7 +268,7 @@
       const b = document.createElement('button');
       b.className = 'btn';
       b.id = 'btn-play-' + type;
-      b.textContent = STATE.DEV_CARDS[type].label + ' ×' + n;
+      b.textContent = I18N.dev(type) + ' ×' + n;
       b.disabled = g.current !== 0 || busy || g.phase !== 'build';
       b.addEventListener('click', () => playDevCard(type));
       el.appendChild(b);
@@ -292,11 +295,15 @@
     };
     if (g.robber && g.map.byKey.has(g.robber)) {
       const t = g.map.byKey.get(g.robber);
-      line('Robber: ' + t.res + ' tile (' + (t.num === 0 ? 'desert' : t.num) + ')');
+      line(I18N.t('info_robber', {
+        res: I18N.res(t.res),
+        num: t.num === 0 ? I18N.t('desertr') : t.num,
+      }));
     } else {
-      line('Robber: not placed yet');
+      line(I18N.t('info_robber',
+        { res: '—', num: I18N.t('desertr') }));
     }
-    line('Development cards left in deck: ' + g.deck.length);
+    line(I18N.t('info_deck', { n: g.deck.length }));
   }
 
   // The canvas is sized by CSS to fill the stage, so its backing store must be
@@ -380,7 +387,7 @@
     if (humanOwes > 0) {
       for (const k of Object.keys(discardPick)) delete discardPick[k];
       discardNeed = humanOwes;
-      setHint('A 7! Discard from your hand: click the chips below.');
+      setHint(I18N.t('h_discard_chips'));
       render();
       return;                       // resumes via finishDiscard()
     }
@@ -403,7 +410,7 @@
     if (rollerId !== 0) return;      // the AI moves its own robber
     if (!g.robberFromSeven) return;
     g.phase = 'robber';
-    setHint('Click a tile to move the robber, then End turn.');
+    setHint(I18N.t('h_robber_tile'));
     render();
   }
 
@@ -421,14 +428,14 @@
         // Official: the mover chooses the victim among the affected.
         pendingStealVictims = candidates;
         g.phase = 'robber';
-        setHint('You may take 1 card: click a player in the panel.');
+        setHint(I18N.t('h_steal'));
         render();
         return;
       }
       finishRobber();
       return;
     }
-    setHint('Robber stayed where it was.');
+    setHint(I18N.t('h_robber_stay'));
     finishRobber();
   }
 
@@ -442,7 +449,7 @@
       if (isSetup()) return;
     }
     if (g.phase !== 'roll') {
-      setHint('You already rolled this turn.');
+      setHint(I18N.t('h_already'));
       return;
     }
     const a = rollDice();
@@ -452,7 +459,7 @@
     const p = g.players[0];
     p.hasRolled = true;
     g.phase = 'build';
-    setHint(`You rolled ${a} + ${b} = ${total}.`);
+    setHint(I18N.t('h_rolled', { a, b, t: total }));
     log(`You rolled ${total}.`);
     AUDIO.dice();
     render();
@@ -474,7 +481,7 @@
       if (!RULES.roadBuildable(g, 0, id)) return false;
       // A road costs 1 wood + 1 brick — or a free-road credit.
       if (p.freeRoads <= 0 && !RULES.canAfford(p, 'road')) {
-        setHint('A road costs 1 wood and 1 brick.');
+        setHint(I18N.t('h_cost_road'));
         render();
         return false;
       }
@@ -527,7 +534,7 @@
       freeBuild(p, 'settlement', id);
       g.phase = 'setup2';
       log('You founded your first settlement.');
-      setHint('Now place a road from your settlement.');
+      setHint(I18N.t('h_after_settle'));
       AUDIO.build();
       render();
     } else if (g.phase === 'setup2') {
@@ -575,7 +582,7 @@
       g.dice = null;
       busy = false;
       log('Everyone is placed. Time to roll.');
-      setHint('Setup complete. Roll the dice to begin.');
+      setHint(I18N.t('h_setup_done'));
       render();
       return;
     }
@@ -592,7 +599,7 @@
       // The previous AI branch left busy set; clear it or the human's
       // canvas clicks will be ignored for the rest of the opening.
       busy = false;
-      setHint('Place your second settlement.');
+      setHint(I18N.t('h_second_settle'));
       render();
     }
   }
@@ -611,7 +618,7 @@
           { forest: 4, hill: 4, field: 4, pasture: 4, mount: 4 });
         const s = AI.bestSettlement(g, 0);
         p.hand = saved;
-        if (!s) { setHint('No legal settlement spot left.'); render(); return; }
+        if (!s) { setHint(I18N.t('h_no_settle')); render(); return; }
         freeBuild(p, 'settlement', s.id);
         log('You founded your first settlement.');
         g.phase = 'setup2';
@@ -623,7 +630,7 @@
           { forest: 4, hill: 4, field: 4, pasture: 4, mount: 4 });
         const r = AI.bestRoad(g, 0);
         p.hand = saved;
-        if (!r) { setHint('No legal road spot left.'); render(); return; }
+        if (!r) { setHint(I18N.t('h_no_road')); render(); return; }
         freeBuild(p, 'road', r.id);
         log('You built your first road.');
         RULES.refreshScores(g);
@@ -639,14 +646,12 @@
     if (busy || g.current !== 0 || g.phase !== 'build') return;
     const card = RULES.buyDevCard(g, 0);
     if (!card) {
-      setHint(g.deck.length === 0
-        ? 'The development deck is empty.'
-        : 'Not enough resources for a development card.');
+      setHint(I18N.t(g.deck.length === 0 ? 'h_deck_empty' : 'h_dev_cost'));
       render();
       return;
     }
     log(`You bought a ${STATE.DEV_CARDS[card].label} card.`);
-    setHint(`You drew a ${STATE.DEV_CARDS[card].label} card.`);
+    setHint(I18N.t('h_drew', { card: I18N.dev(card) }));
     render();
   }
 
@@ -654,19 +659,19 @@
     if (busy || g.current !== 0 || g.phase !== 'build') return;
     const p = g.players[0];
     if (type !== 'victory' && p.devBoughtThisTurn.includes(type)) {
-      setHint(`A ${STATE.DEV_CARDS[type].label} bought this turn can be played on your next turn.`);
+      setHint(I18N.t('h_dev_bought_turn', { card: I18N.dev(type) }));
       render();
       return;
     }
     if (type !== 'victory' && p.devPlayedThisTurn) {
-      setHint('You already played a development card this turn.');
+      setHint(I18N.t('h_dev_played_already'));
       render();
       return;
     }
     const before = p.devCards.length;
     if (!RULES.playDevCard(g, 0, type)) {
       if (p.devCards.length === before) {
-        setHint(`No ${STATE.DEV_CARDS[type].label} card to play.`);
+        setHint(I18N.t('h_dev_none', { card: I18N.dev(type) }));
         render();
       }
       return;
@@ -678,7 +683,7 @@
       resolveSeven(0);
       return;
     }
-    setHint(`Played ${STATE.DEV_CARDS[type].label}.`);
+    setHint(I18N.t('h_dev_played', { card: I18N.dev(type) }));
     render();
   }
 
@@ -691,11 +696,11 @@
       return;
     }
     if (g.robberFromSeven) {
-      setHint('Move the robber before ending your turn.');
+      setHint(I18N.t('h_end_robber'));
       return;
     }
     if (pendingStealVictims) {
-      setHint('Take a card first: click a player in the panel.');
+      setHint(I18N.t('h_end_steal'));
       return;
     }
     if (RULES.checkWinner(g)) { render(); return; }
@@ -711,7 +716,7 @@
     const cur = STATE.currentPlayer(g);
     if (cur.isAI) runAITurn(cur);
     else {
-      setHint('Roll the dice.');
+      setHint(I18N.t('h_roll_dice'));
       render();
     }
   }
@@ -750,7 +755,7 @@
     const cur = STATE.currentPlayer(g);
     if (cur.isAI) runAITurn(cur);
     else {
-      setHint('Roll the dice.');
+      setHint(I18N.t('h_roll_dice'));
       render();
     }
   }
@@ -892,6 +897,8 @@
 
   // Options overlay behind the floating gear button; closes on the ✕
   // button, a backdrop click, or Escape.
+  // Principal menu: shown at boot and behind the floating gear button;
+  // closes on the Play button, the ✕, a backdrop click, or Escape.
   const menuBtn = $('btn-menu');
   const optOverlay = $('optoverlay');
   if (menuBtn && optOverlay) {
@@ -901,16 +908,66 @@
     optOverlay.addEventListener('click', (ev) => {
       if (ev.target === optOverlay) optOverlay.classList.remove('open');
     });
+    const playBtn = $('btn-play');
+    if (playBtn) {
+      playBtn.addEventListener('click', () => optOverlay.classList.remove('open'));
+    }
     window.addEventListener('keydown', (ev) => {
-      if (ev.key === 'Escape') optOverlay.classList.remove('open');
+      if (ev.key === 'Escape') {
+        const rules = $('rulesoverlay');
+        if (rules && rules.classList.contains('open')) {
+          rules.classList.remove('open');
+        } else {
+          optOverlay.classList.remove('open');
+        }
+      }
     });
+  }
+
+  // Rules & objectives panel.
+  const rulesBtn = $('btn-rules');
+  const rulesOverlay = $('rulesoverlay');
+  if (rulesBtn && rulesOverlay) {
+    rulesBtn.addEventListener('click', () => rulesOverlay.classList.add('open'));
+    const rc = $('btn-rules-close');
+    if (rc) rc.addEventListener('click', () => rulesOverlay.classList.remove('open'));
+    const rok = $('btn-rules-ok');
+    if (rok) rok.addEventListener('click', () => rulesOverlay.classList.remove('open'));
+    rulesOverlay.addEventListener('click', (ev) => {
+      if (ev.target === rulesOverlay) rulesOverlay.classList.remove('open');
+    });
+  }
+
+  // Language selection: translate the static UI, then re-render so the
+  // dynamic labels (chips, hints, statuses) follow.
+  const langSel = $('lang');
+  if (langSel) {
+    langSel.value = I18N.get();
+    langSel.addEventListener('change', () => {
+      I18N.set(langSel.value);
+      refreshFxLabels();
+      refreshDebugLabel();
+      render();
+    });
+  }
+
+  // Music / SFX toggles carry a translated state in their label.
+  function refreshFxLabels() {
+    const m = $('btn-music');
+    if (m) m.textContent = I18N.t('music') + ': ' + I18N.yesNo(AUDIO.isPlaying());
+    const s = $('btn-sfx');
+    if (s) s.textContent = I18N.t('sfx') + ': ' + I18N.yesNo(AUDIO.isSfxOn());
+  }
+  function refreshDebugLabel() {
+    const d = $('btn-debug');
+    if (d && !debugRunning) d.textContent = I18N.t('debug_play');
   }
 
   const sfxBtn = $('btn-sfx');
   if (sfxBtn) {
     sfxBtn.addEventListener('click', () => {
       const on = AUDIO.setSfx(!AUDIO.isSfxOn());
-      sfxBtn.textContent = 'SFX: ' + (on ? 'on' : 'off');
+      sfxBtn.textContent = I18N.t('sfx') + ': ' + I18N.yesNo(on);
     });
   }
 
@@ -1002,17 +1059,15 @@
     }
     const el = $('buildhint');
     if (!el) return;
-    if (discardNeed > 0) el.textContent = 'Discard first.';
+    if (discardNeed > 0) el.textContent = I18N.t('h_discard_chips');
     else if (g.phase === 'setup1') {
-      el.textContent = 'Click a highlighted corner to found your settlement (free).';
+      el.textContent = I18N.t('h_setup1');
     } else if (g.phase === 'setup2') {
-      el.textContent = 'Click a highlighted edge to lay a road (free).';
+      el.textContent = I18N.t('h_setup2');
     } else if (g.phase === 'robber') {
-      el.textContent = 'Click a tile to drop the robber on it.';
-    } else if (tool) {
-      el.textContent = `Click a highlighted spot to build a ${tool}.`;
+      el.textContent = I18N.t('h_robber_tile');
     } else {
-      el.textContent = 'Pick a build tool, then click a highlighted spot.';
+      el.textContent = I18N.t('h_picktool');
     }
   }
 
@@ -1105,7 +1160,7 @@
   if (musicBtn) {
     musicBtn.addEventListener('click', () => {
       const on = AUDIO.toggle();
-      musicBtn.textContent = on ? 'Music: on' : 'Music: off';
+      musicBtn.textContent = I18N.t('music') + ': ' + I18N.yesNo(on);
     });
   }
 
@@ -1131,7 +1186,7 @@
     g.phase = 'setup1';
     g.current = g.setupOrder[0];
     log('A new island. Place your settlement to begin.');
-    setHint('Place your settlement.');
+    setHint(I18N.t('h_first_settle'));
     render();
   }
 
@@ -1221,7 +1276,7 @@
     if (debugRunning) return;
     debugRunning = true;
     const btn = $('btn-debug');
-    if (btn) { btn.disabled = true; btn.textContent = 'Debug: playing…'; }
+    if (btn) { btn.disabled = true; btn.textContent = I18N.t('debug_playing'); }
 
     const sleep = (ms) => new Promise(r => setTimeout(r, ms));
     const MAX_TURNS = 400;
@@ -1320,7 +1375,7 @@
         log(`Debug: hit the ${MAX_TURNS}-turn cap without a winner. ` +
           g.players.map(p => `${p.name} ${p.score} vp`).join(', '));
       }
-      setHint('Debug run finished. Press New game to play yourself.');
+      setHint(I18N.t('h_debug_done'));
     } catch (err) {
       log('Debug: error — ' + (err && err.message ? err.message : String(err)));
       throw err;
@@ -1328,12 +1383,14 @@
       busy = false;
       debugRunning = false;
       tool = null;
-      if (btn) { btn.disabled = false; btn.textContent = 'Debug: auto-play'; }
+      if (btn) { btn.disabled = false; btn.textContent = I18N.t('debug_play'); }
       render();
     }
   }
 
   // ---- boot
+  I18N.applyStatic();
+  refreshFxLabels();
   startNewGame();
   window.addEventListener('resize', render);
   // Rotation re-fits the base scale; zoom is kept relative to the fit.
