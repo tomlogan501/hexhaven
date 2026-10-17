@@ -30,13 +30,33 @@ const RULES = (() => {
     return new Set([...p.settlements, ...p.cities]);
   }
 
-  // A road must touch one of the player's own settlements or cities.
+  // Official: a road must touch one of the player's settlements/cities, or
+  // continue one of the player's own roads — and the connection point must
+  // not pass through an opponent's building.
   function roadSpotFree(g, pid, eid) {
     const map = g.map;
     const e = map.edges[eid];
     if (e.built !== null) return false;
     const mine = ownedVertices(g, pid);
-    return mine.has(e.a) || mine.has(e.b);
+    if (mine.has(e.a) || mine.has(e.b)) return true;
+    const roadEnds = (vert) => {
+      if (roadVertexBlocks(g, pid, vert)) return false;   // enemy building cuts
+      return g.players[pid].roads.some(rid => {
+        const r = map.edges[rid];
+        return r.a === vert || r.b === vert;
+      });
+    };
+    return roadEnds(e.a) || roadEnds(e.b);
+  }
+
+  // Official: after setup, a settlement must sit on a vertex of the player's
+  // own road network.
+  function settlementConnects(g, pid, vid) {
+    const map = g.map;
+    return g.players[pid].roads.some(rid => {
+      const r = map.edges[rid];
+      return r.a === vid || r.b === vid;
+    });
   }
 
   function roadBuildable(g, pid, eid) {
@@ -447,7 +467,8 @@ const RULES = (() => {
   }
 
   return {
-    COST, canAfford, pay, settlementSpotFree, roadSpotFree, roadBuildable,
+    COST, canAfford, pay, settlementSpotFree, settlementConnects,
+    roadSpotFree, roadBuildable,
     canBuildCity, buildRoad, buildSettlement, buildCity,
     updateLongestRoad, scoreOf, refreshScores, checkWinner,
     // robber

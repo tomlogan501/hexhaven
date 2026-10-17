@@ -22,12 +22,15 @@ const AI = (() => {
     return expect * (1 + 0.35 * (kinds.size - 1));
   }
 
-  function bestSettlement(g, pid) {
+  function bestSettlement(g, pid, requireConnection = true) {
     const p = g.players[pid];
     if (!RULES.canAfford(p, 'settlement')) return null;
     let best = null, bestScore = -Infinity;
     for (const v of g.map.vertices) {
       if (!RULES.settlementSpotFree(g, v.id)) continue;
+      // Official rule (except during setup): a settlement attaches to the
+      // player's road network.
+      if (requireConnection && !RULES.settlementConnects(g, pid, v.id)) continue;
       let s = spotScore(g, v);
       for (const nid of v.adj) {
         for (const e of g.map.edges) {

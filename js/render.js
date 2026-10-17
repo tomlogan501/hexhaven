@@ -556,7 +556,10 @@ const RENDER = (() => {
     if (pid === 0 && (tool === 'settlement' || tool === 'road' || tool === 'city')) {
       if (tool === 'settlement') {
         for (const v of map.vertices) {
-          if (RULES.settlementSpotFree(g, v.id)) {
+          // During the first setup round any legal corner goes; afterwards a
+          // settlement must attach to the player's road network (official).
+          if (RULES.settlementSpotFree(g, v.id) &&
+              (g.phase === 'setup1' || RULES.settlementConnects(g, 0, v.id))) {
             jobs.push({ d: depth(v.x, v.y) + 0.6, f: () => drawHighlightVertex(ctx, v, project, '#4ec96a', pulse) });
           }
         }

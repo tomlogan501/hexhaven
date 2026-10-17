@@ -441,6 +441,8 @@
       log('You built a road.');
     } else if (kind === 'settlement') {
       if (!RULES.settlementSpotFree(g, id)) return false;
+      // After setup, a settlement must attach to the player's road network.
+      if (!RULES.settlementConnects(g, 0, id)) return false;
       if (!RULES.canAfford(p, 'settlement')) return false;
       RULES.buildSettlement(g, 0, id);
       log('You founded a settlement.');
@@ -507,7 +509,7 @@
     const saved = p.hand;
     p.hand = Object.assign(STATE.emptyHand(),
       { forest: 4, hill: 4, field: 4, pasture: 4, mount: 4 });
-    const s = AI.bestSettlement(g, p.id);
+    const s = AI.bestSettlement(g, p.id, false);
     if (s) {
       freeBuild(p, 'settlement', s.id);
       log(`${p.name} founded a settlement.`);
@@ -926,13 +928,23 @@
     }
   }
 
-  for (const b of document.querySelectorAll('[data-build]')) {
-    b.addEventListener('click', () => {
-      if (g.current !== 0 || busy || g.phase === 'done') return;
-      if (!(isSetup() || g.phase === 'build')) return;
-      tool = tool === b.dataset.build ? null : b.dataset.build;
-      render();
-    });
+  // Build buttons exist in index.html (with data-build) and in the headless
+  // stub (id-only), so bind every unique candidate element per kind.
+  for (const kind of ['road', 'settlement', 'city']) {
+    const bound = {};
+    const register = (b) => {
+      if (!b || bound[b.id]) return;
+      bound[b.id] = b;
+      if (!b.dataset.build) b.dataset.build = kind;
+      b.addEventListener('click', () => {
+        if (g.current !== 0 || busy || g.phase === 'done') return;
+        if (!(isSetup() || g.phase === 'build')) return;
+        tool = tool === b.dataset.build ? null : b.dataset.build;
+        render();
+      });
+    };
+    for (const b of document.querySelectorAll('[data-build="' + kind + '"]')) register(b);
+    register($('build-' + kind));
   }
 
   const tradeBtn = $('btn-trade');
@@ -1133,7 +1145,7 @@
         p.hand = Object.assign(STATE.emptyHand(),
           { forest: 4, hill: 4, field: 4, pasture: 4, mount: 4 });
         const pick = kind === 'settlement'
-          ? AI.bestSettlement(g, 0)
+          ? AI.bestSettlement(g, 0, false)
           : AI.bestRoad(g, 0);
         p.hand = saved;
         return pick;

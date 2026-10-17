@@ -211,6 +211,40 @@ check('longest road counts the single segment', g.longest.length === 1,
     'holder=' + g5.longest.player + ' len=' + g5.longest.length);
 }
 
+// ---- roads connect to the player's network (official placement rules)
+{
+  const gR = ctx.STATE.newGame(2, 2);
+  for (const p of gR.players) {
+    Object.assign(p.hand, { forest: 50, pasture: 50, field: 50, hill: 50, mount: 50 });
+  }
+  const vA = gR.map.vertices.find(v => ctx.RULES.settlementSpotFree(gR, v.id));
+  ctx.RULES.buildSettlement(gR, 0, vA.id);
+  // First road extends the settlement.
+  const far = gR.map.edges.find(e =>
+    e.built === null && (e.a === vA.id || e.b === vA.id));
+  check('road may leave a settlement', ctx.RULES.roadBuildable(gR, 0, far.id));
+  ctx.RULES.buildRoad(gR, 0, far.id);
+  // The far vertex of that road must now allow extension (network build).
+  const tip = far.a === vA.id ? far.b : far.a;
+  const extend = gR.map.edges.find(e =>
+    e.built === null && (e.a === tip || e.b === tip));
+  check('road extension continues the network',
+    !!extend && ctx.RULES.roadBuildable(gR, 0, extend.id));
+  ctx.RULES.buildRoad(gR, 0, extend.id);
+  // A detached edge (touching nothing of player 0) must be refused.
+  const tip2 = extend.a === tip ? extend.b : extend.a;
+  const detached = gR.map.edges.find(e => {
+    if (e.built !== null) return false;
+    const vs = [e.a, e.b];
+    return !vs.includes(vA.id) && !vs.includes(tip) && !vs.includes(tip2);
+  });
+  check('detached road spot is refused',
+    !detached || !ctx.RULES.roadBuildable(gR, 0, detached.id));
+  // Settlements must attach to the road network after setup.
+  check('settlement connects at its own road vertex',
+    ctx.RULES.settlementConnects(gR, 0, tip));
+}
+
 // ---- AI: it must actually build something legal
 {
   const g3 = ctx.STATE.newGame(2, 2);
@@ -219,14 +253,36 @@ check('longest road counts the single segment', g.longest.length === 1,
     Object.assign(p.hand, { forest: 15, pasture: 15, field: 15, hill: 15, mount: 15 });
   }
   const ai = g3.players[1];
-  const s = ctx.AI.bestSettlement(g3, 1);
-  check('AI finds a settlement spot', !!s);
-  if (s) {
-    check('AI spot is legal', ctx.RULES.settlementSpotFree(g3, s.id));
-    ctx.RULES.buildSettlement(g3, 1, s.id);
+  // Official rule: with no road network there is no legal settlement spot.
+  check('AI refuses a settlement without any road network',
+    ctx.AI.bestSettlement(g3, 1) === null);
+  // Give the AI an opening place, then it must be able to build on it.
+  const start = ctx.AI.bestSettlement(g3, 1, false);
+  check('finds an opening settlement spot', !!start);
+  if (start) {
+    check('opening spot is legal', ctx.RULES.settlementSpotFree(g3, start.id));
+    ctx.RULES.buildSettlement(g3, 1, start.id);
     const r = ctx.AI.bestRoad(g3, 1);
     check('AI finds a road after settling', !!r);
     check('AI road is legal', r ? ctx.RULES.roadBuildable(g3, 1, r.id) : false);
+    if (r) {
+      ctx.RULES.buildRoad(g3, 1, r.id);
+      // The distance rule keeps every vertex one edge from the opening
+      // settlement off-limits, so the AI must extend the chain until a
+      // hop-2 tip exists, then settle there.
+      let s2 = null;
+      for (let more = 0; more < 6 && !s2; more++) {
+        ctx.AI.bestSettlement(g3, 1) === null;   // stays refused while too short
+        const rx = ctx.AI.bestRoad(g3, 1);
+        if (!rx || !ctx.RULES.roadBuildable(g3, 1, rx.id)) break;
+        ctx.RULES.buildRoad(g3, 1, rx.id);
+        s2 = ctx.AI.bestSettlement(g3, 1);
+      }
+      check('AI settles on its road network after extending it', !!s2 &&
+        ctx.RULES.settlementConnects(g3, 1, s2.id) &&
+        ctx.RULES.settlementSpotFree(g3, s2.id), s2 && s2.id);
+      void s2;
+    }
   }
   void ai;
 }

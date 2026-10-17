@@ -105,7 +105,7 @@ for (const id of IDS) mk(id);
 
 // Build buttons, as index.html declares them.
 const BUILD_BTNS = ['road', 'settlement', 'city'].map((kind) => {
-  const b = new El('build-' + kind, 'button');
+  const b = mk('build-' + kind, 'button');
   b.dataset.build = kind;
   return b;
 });

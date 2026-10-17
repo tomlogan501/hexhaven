@@ -129,12 +129,15 @@ Official costs (wood/brick/sheep/wheat/ore = forest/hill/pasture/field/mount her
 
 Rules of placement:
 - Settlement: distance rule — no settlement/city within 2 edges (intersection
-  spacing), including other players' (`settlementSpotFree`, rules.js:22-26) ✅.
-- Settlement must connect to one of your roads (enforced in main.js/AI paths).
-- City: upgrade one of your own settlements only (`canBuildCity`, rules.js:46-51) ✅.
+  spacing), including other players' (`settlementSpotFree`, rules.js) ✅.
+- Settlement must connect to one of your own roads after setup
+  (`settlementConnects`, enforced in main.js/AI placement, `render.js`
+  highlights only network-connected spots) ✅ (fixed 2026-10-17).
+- City: upgrade one of your own settlements only (`canBuildCity`, rules.js) ✅.
 - Road: on an empty edge touching one of your settlements/cities **or**
-  (implemented) any existing network chain — see `roadSpotFree` (rules.js:34-40) ⚠️
-  does not yet require adjacency to your road network beyond settlements/cities.
+  continuing your own road network — the connection point must not pass
+  through an opponent's settlement (`roadSpotFree`, rules.js) ✅ (fixed
+  2026-10-17: chain extension is now legal; an opponent's building blocks).
 - Stock: 15 roads, 5 settlements, 4 cities per player (stock counts are enforced in
   AI/main build paths — verify).
 
@@ -212,10 +215,11 @@ settlements 1, cities 2, VP cards 1 each, longest ≥ 5 = +2, army ≥ 3 = +2 �
 ## 11. Summary of deviations to fix
 
 1. ✅ Number tokens: no 7 tokens, use the exact 18-token multiset (`js/map.js`) — merged to master.
-8. ✅ Longest road: chains cut at opponent settlements, official transfer/hold/return (`js/rules.js`).
-2. 🐞 Year of Plenty should take 2 resources from the bank, not 2 dev cards.
-3. 🐞 Monopoly: one chosen resource, take ALL cards of that type.
-4. 🚧 Road Building: grant 2 free roads.
-5. 🚧 No same-turn dev card restriction / one-dev-card-per-turn cap.
-6. ℹ️ Harbor types: 4 specific + 5 generic officially, here 5 + 4.
-7. ℹ️ Robber steal: mover-facing choice; currently random where applicable.
+2. ✅ Longest road: chains cut at opponent settlements, official transfer/hold/return (`js/rules.js`).
+3. ✅ Roads: connect to settlement **or** your own road network, no build-through from an opponent's settlement; settlements attach to your roads after setup.
+4. 🐞 Year of Plenty should take 2 resources from the bank, not 2 dev cards.
+5. 🐞 Monopoly: one chosen resource, take ALL cards of that type.
+6. 🚧 Road Building: grant 2 free roads.
+7. 🚧 No same-turn dev card restriction / one-dev-card-per-turn cap.
+8. ℹ️ Harbor types: 4 specific + 5 generic officially, here 5 + 4.
+9. ℹ️ Robber steal: mover-facing choice; currently random where applicable.
