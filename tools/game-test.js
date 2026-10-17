@@ -135,6 +135,82 @@ check('longest road counts the single segment', g.longest.length === 1,
   check('longest road holder is the builder', g2.longest.player === 0);
 }
 
+{
+  const chainRoads = (g4, pid, fromId, roadList, usedV, count) => {
+    // Walk outward from `fromId`, taking unbuilt edges that only meet the
+    // frontier, and record the frontier vertex ids along the way.
+    let cursor = fromId;
+    for (let step = 0; step < count; step++) {
+      let done = false;
+      for (const e of g4.map.edges) {
+        if (e.built !== null) continue;
+        if (usedV.has(e.a) && usedV.has(e.b)) continue;   // no inside loop-backs
+        const ok = e.a === cursor || e.b === cursor;
+        if (!ok) continue;
+        const other = e.a === cursor ? e.b : e.a;
+        if (usedV.has(other)) continue;
+        ctx.RULES.buildRoad(g4, pid, e.id);
+        roadList.push(e.id);
+        usedV.add(other);
+        cursor = other;
+        done = true;
+        break;
+      }
+      if (!done) break;
+    }
+  };
+
+  // ---- an opponent's settlement splits the chain: the card returns to the
+  // table, and one more continuous stretch can win it back.
+  const g4 = ctx.STATE.newGame(2, 2);
+  for (const p of g4.players) {
+    Object.assign(p.hand, { forest: 50, pasture: 50, field: 50, hill: 50, mount: 50 });
+  }
+  const v0 = g4.map.vertices.find(v => ctx.RULES.settlementSpotFree(g4, v.id));
+  ctx.RULES.buildSettlement(g4, 0, v0.id);
+  const roads = [], usedV = new Set([v0.id]);
+  chainRoads(g4, 0, v0.id, roads, usedV, 5);
+  check('chain built for the split test', roads.length >= 5,
+    'roads=' + roads.length);
+  check('card holder before the split', g4.longest.player === 0);
+
+  // Enemy settlement in the middle of the chain (4th frontier vertex).
+  const mid = [...usedV][3];
+  ctx.RULES.buildSettlement(g4, 1, mid);
+  check('opponent settlement splits the chain: card returns to the table',
+    g4.longest.player === null, ctx.RULES.scoreOf(g4, g4.players[0]) + ' vp p0');
+
+  // Continue the chain outward from the far end: passing the enemy building
+  // is impossible, so the new stretch joins the far sub-chain.
+  const frontierV = [...usedV][usedV.size - 1];
+  chainRoads(g4, 0, frontierV, roads, usedV, 4);
+  const restored = g4.longest;
+  check('rebuilding one more stretch takes the longest road back',
+    restored.player === 0 && restored.length >= 5,
+    'holder=' + restored.player + ' len=' + restored.length);
+  check('the split chain is strictly shorter than the restored one',
+    restored.length === roads.length - 3,
+    'len=' + restored.length + ' roads=' + roads.length);
+
+  // ---- equal-length chains: the current holder keeps the card.
+  const g5 = ctx.STATE.newGame(2, 2);
+  for (const p of g5.players) {
+    Object.assign(p.hand, { forest: 50, pasture: 50, field: 50, hill: 50, mount: 50 });
+  }
+  const y0 = g5.map.vertices.find(v => ctx.RULES.settlementSpotFree(g5, v.id));
+  ctx.RULES.buildSettlement(g5, 0, y0.id);
+  const r0 = [], u0 = new Set([y0.id]);
+  chainRoads(g5, 0, y0.id, r0, u0, 5);
+  check('p0 holds the 5-chain card', g5.longest.player === 0);
+  const y1 = g5.map.vertices.find(v =>
+    ctx.RULES.settlementSpotFree(g5, v.id) && !u0.has(v.id));
+  ctx.RULES.buildSettlement(g5, 1, y1.id);
+  const r1 = [], u1 = new Set([y1.id]);
+  chainRoads(g5, 1, y1.id, r1, u1, 5);
+  check('equal chain keeps the card with its holder', g5.longest.player === 0,
+    'holder=' + g5.longest.player + ' len=' + g5.longest.length);
+}
+
 // ---- AI: it must actually build something legal
 {
   const g3 = ctx.STATE.newGame(2, 2);

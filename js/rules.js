@@ -192,7 +192,15 @@ const RULES = (() => {
     }
   }
 
-  // ---- longest road: longest trail of the player's edges, no branch reuse
+  // ---- longest road: longest trail of the player's edges, no branch reuse.
+  // Official rule: a road chain cannot pass THROUGH a vertex where an
+  // opponent's settlement or city sits (an opponent's building cuts the
+  // chain); your own buildings do not cut your own chain.
+  function roadVertexBlocks(g, pid, vid) {
+    const v = g.map.vertices[vid];
+    return v.owner !== null && v.owner !== pid;
+  }
+
   function trailLengthFrom(g, pid, startEdge, seen) {
     const map = g.map;
     const e = map.edges[startEdge];
@@ -200,6 +208,7 @@ const RULES = (() => {
     seen.add(startEdge);
     let best = 0;
     for (const end of [e.a, e.b]) {
+      if (roadVertexBlocks(g, pid, end)) continue;   // enemy building cuts here
       for (const nid of map.vertices[end].adj) {
         const eid = map.edges.findIndex(x =>
           (x.a === end && x.b === nid) || (x.b === end && x.a === nid));
@@ -210,25 +219,59 @@ const RULES = (() => {
     return 1 + best;
   }
 
-  function updateLongestRoad(g, pid) {
-    const p = g.players[pid];
+  function bestChainOf(g, pid) {
     let best = 0;
-    for (const eid of p.roads) {
+    for (const eid of g.players[pid].roads) {
       best = Math.max(best, trailLengthFrom(g, pid, eid, new Set()));
     }
-    const prev = g.longest;
-    if (best > prev.length) {
-      g.longest = { player: pid, length: best };
-      STATE.addLog(g, `${p.name} has the longest road: ${best}`);
-    } else if (best < prev.length && prev.player === pid) {
-      let winner = null, len = 0;
-      for (const pl of g.players) {
-        let m = 0;
-        for (const eid of pl.roads) m = Math.max(m, trailLengthFrom(g, pl.id, eid, new Set()));
-        if (m > len) { len = m; winner = pl.id; }
-      }
-      g.longest = { player: len >= 5 ? winner : null, length: len };
+    return best;
+  }
+
+  // Recompute every player's longest single chain and apply the official
+  // card rules: awarded at a strictly longest chain of >= 5; another player
+  // takes it by being strictly longer; the holder keeps it on a tie; if the
+  // holder no longer has (strictly) the longest chain >= 5, the card goes to
+  // the unique longest chain >= 5, or back to the table.
+  function recomputeLongestRoad(g) {
+    const bestBy = new Map();
+    let maxLen = 0;
+    for (const p of g.players) {
+      const len = bestChainOf(g, p.id);
+      bestBy.set(p.id, len);
+      if (len > maxLen) maxLen = len;
     }
+    const leaders = g.players.filter(p => bestBy.get(p.id) === maxLen);
+    const prev = g.longest;
+
+    // The holder keeps the card while it still shares the top length (tie).
+    if (prev.player !== null && bestBy.get(prev.player) === maxLen && maxLen >= 5) {
+      g.longest = { player: prev.player, length: maxLen };
+      return;
+    }
+    // A unique chain of 5+ takes (back) the card.
+    if (maxLen >= 5 && leaders.length === 1) {
+      const leader = leaders[0];
+      if (prev.player === null) {
+        STATE.addLog(g, `${leader.name} has the longest road: ${maxLen}`);
+      } else {
+        STATE.addLog(g,
+          `${leader.name} takes the Longest Road from ${g.players[prev.player].name} (${maxLen} segments).`);
+      }
+      g.longest = { player: leader.id, length: maxLen };
+      return;
+    }
+    // Nothing qualifies (too short, or a tie among players that is not the
+    // holder's): the card goes back to the table.
+    if (prev.player !== null) {
+      STATE.addLog(g, `The Longest Road returns to the table.`);
+    }
+    g.longest = { player: null, length: maxLen };
+  }
+
+  // Update step kept for call sites that change one player's network.
+  function updateLongestRoad(g, pid) {
+    void pid;
+    recomputeLongestRoad(g);
   }
 
   // ---- scoring

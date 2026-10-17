@@ -170,10 +170,15 @@ null ✅.
   strictly more knights than the holder. Implemented in `updateLargestArmy`
   (rules.js:184-193) ✅ (needs ≥ 3 knights; `largestArmy.size` starts at 0).
 - **Longest Road** — official: continuous single chain of ≥ 5 of your roads (2 VP);
-  transfer only on a strictly longer chain; recount/steal-back handled when the
-  holder's chain drops below the record or below 5.
-  Implemented in `trailLengthFrom` / `updateLongestRoad` (rules.js:196-232) ✅,
-  with the same trail graph used for road placement legality.
+  transfer only on a strictly longer chain; the holder keeps the card on a tie;
+  an opponent's settlement or city **splits** a chain and cuts it there, so the
+  card returns to the table unless exactly one other chain of ≥ 5 exists; each
+  subsequent recompute refreshes the recorded length even when the holder keeps
+  the card.
+  Implemented in `roadVertexBlocks` / `trailLengthFrom` / `bestChainOf` /
+  `recomputeLongestRoad` (rules.js), recomputed on every road build and on every
+  settlement placement (any player's), with the same trail graph used for road
+  placement legality. ✅ (fixed 2026-10-17)
 
 ---
 
@@ -206,7 +211,8 @@ settlements 1, cities 2, VP cards 1 each, longest ≥ 5 = +2, army ≥ 3 = +2 �
 
 ## 11. Summary of deviations to fix
 
-1. 🐞 Number tokens: no 7 tokens, use the exact 18-token multiset (`js/map.js`).
+1. ✅ Number tokens: no 7 tokens, use the exact 18-token multiset (`js/map.js`) — merged to master.
+8. ✅ Longest road: chains cut at opponent settlements, official transfer/hold/return (`js/rules.js`).
 2. 🐞 Year of Plenty should take 2 resources from the bank, not 2 dev cards.
 3. 🐞 Monopoly: one chosen resource, take ALL cards of that type.
 4. 🚧 Road Building: grant 2 free roads.
