@@ -97,7 +97,10 @@ function mk(id, tag) { const e = new El(id, tag); byId.set(id, e); return e; }
 const IDS = [
   'board', 'status', 'players', 'hand', 'buildhint', 'buildbar',
   'btn-roll', 'btn-pass', 'btn-music', 'btn-sfx', 'btn-new', 'btn-debug',
-  'opponent-count', 'island-size',
+  'opponent-count', 'island-size', 'game-mode', 'handoff', 'handoff-message',
+  'btn-handoff', 'trade-response', 'btn-trade-accept', 'btn-trade-decline',
+  'tradepanel', 'trade-give', 'trade-want', 'tradehint', 'trade-title',
+  'tab-players', 'tab-bank', 'btn-offer', 'btn-trade', 'btn-trade-clear', 'btn-trade-close',
   'btn-dev', 'devcards', 'devhint', 'discardpanel', 'discarthint',
   'boardinfo', 'rollresult', 'log',
 ];
@@ -532,6 +535,85 @@ async function sweep(want, step = 6) {
     'got ' + LIVE().players.length + ' players');
   check('standard island has 19 tiles', LIVE().map.tiles.length === 19,
     'got ' + LIVE().map.tiles.length + ' tiles');
+
+  // Local multiplayer exercises distinct human turns, handoffs and decisions.
+  {
+    $('game-mode').value = 'local';
+    $('opponent-count').value = '1';
+    $('btn-new').click();
+    check('local game has two human players', LIVE().players.length === 2 && LIVE().players.every(p => !p.isAI));
+    $('btn-pass').click(); // automatic setup for player 1
+    check('setup passes device to player 2', LIVE().current === 1 && $('handoff').classList.contains('open'));
+    $('btn-roll').click();
+    check('handoff blocks actions until ready', LIVE().players[1].settlements.length === 0);
+    $('btn-handoff').click();
+    $('btn-pass').click(); // both of player 2's snake-order placements
+    check('player 2 places their own setup pieces', LIVE().players[1].settlements.length === 2 && LIVE().players[1].roads.length === 2);
+    check('setup returns to player 1', LIVE().current === 0 && $('handoff').classList.contains('open'));
+    $('btn-handoff').click();
+    $('btn-pass').click();
+    check('all players finish setup', LIVE().players.every(p => p.settlements.length === 2 && p.roads.length === 2));
+    check('normal play begins', LIVE().phase === 'roll' && LIVE().current === 0);
+
+    // Force a seven with both hands over the threshold.
+    for (const p of LIVE().players) Object.assign(p.hand, { forest: 8, pasture: 0, field: 0, hill: 0, mount: 0 });
+    vm.runInContext('globalThis.__oldRandom = Math.random; let __dice = 0; Math.random = () => (++__dice % 2 ? 0.4 : 0.6);', ctxObj);
+    $('btn-roll').click();
+    vm.runInContext('Math.random = globalThis.__oldRandom', ctxObj);
+    const discardWood = () => {
+      for (let i = 0; i < 4; i++) {
+        const chip = $('hand').children.find(c => c.dataset.res === 'forest');
+        $('hand').dispatch('click', { target: chip });
+      }
+    };
+    check('seven asks the roller to discard', /Player 1 must discard/.test($('status').textContent));
+    discardWood();
+    check('seven hands off to the other player', $('handoff').classList.contains('open') && /Player 2/.test($('handoff-message').textContent));
+    discardWood();
+    check('handoff blocks discard until ready', LIVE().players[1].hand.forest === 8);
+    $('btn-handoff').click();
+    discardWood();
+    check('each player discards their own cards', LIVE().players.every(p => p.hand.forest === 4));
+    check('robber returns to the roller', LIVE().phase === 'robber' && $('handoff').classList.contains('open'));
+    $('btn-handoff').click();
+
+    // Exercise a human offer and acceptance with the offerer hidden.
+    LIVE().phase = 'build'; LIVE().robberFromSeven = false;
+    LIVE().players[0].hand.forest = 2; LIVE().players[1].hand.hill = 2;
+    $('btn-trade').click();
+    const give = $('trade-give').children.find(c => c.dataset.res === 'forest');
+    $('tradepanel').dispatch('click', { target: give });
+    const want = $('trade-want').children.find(c => c.dataset.res === 'hill');
+    $('tradepanel').dispatch('click', { target: want });
+    $('btn-offer').click();
+    check('trade passes device to recipient', $('handoff').classList.contains('open') && /Player 2/.test($('handoff-message').textContent));
+    $('btn-handoff').click();
+    check('trade requires explicit acceptance', !$('trade-response').classList.contains('hidden') && LIVE().players[0].hand.forest === 2);
+    $('btn-trade-accept').click();
+    check('accepted trade transfers both bundles', LIVE().players[0].hand.forest === 1 && LIVE().players[0].hand.hill === 1 && LIVE().players[1].hand.forest === 5 && LIVE().players[1].hand.hill === 1);
+    check('trade returns device to offerer', $('handoff').classList.contains('open') && /Player 1/.test($('handoff-message').textContent));
+    $('btn-handoff').click();
+    $('btn-pass').click();
+    check('end turn passes control to next human', LIVE().current === 1 && $('handoff').classList.contains('open'));
+    $('btn-handoff').click();
+    LIVE().phase = 'build';
+    LIVE().players[1].hand.forest = 2; LIVE().players[0].hand.hill = 2;
+    $('btn-trade').click();
+    $('tradepanel').dispatch('click', { target: $('trade-give').children.find(c => c.dataset.res === 'forest') });
+    $('tradepanel').dispatch('click', { target: $('trade-want').children.find(c => c.dataset.res === 'hill') });
+    $('btn-offer').click(); $('btn-handoff').click(); $('btn-trade-decline').click();
+    check('declined trade leaves both hands unchanged', LIVE().players[1].hand.forest === 2 && LIVE().players[0].hand.hill === 2);
+    $('btn-handoff').click();
+
+    $('opponent-count').value = '3';
+    $('btn-new').click();
+    for (let i = 0; i < 12 && (LIVE().phase === 'setup1' || LIVE().phase === 'setup2'); i++) {
+      if ($('handoff').classList.contains('open')) $('btn-handoff').click();
+      $('btn-pass').click();
+    }
+    check('four humans complete snake-order setup', LIVE().phase === 'roll' && LIVE().players.length === 4 && LIVE().players.every(p => !p.isAI && p.settlements.length === 2 && p.roads.length === 2));
+    $('game-mode').value = 'solo';
+  }
 
   // ---- Debug: auto-play button (runs the real click path end to end)
   // main.js's debug run plays toward a 10 VP win, which is far longer than

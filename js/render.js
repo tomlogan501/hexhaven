@@ -597,26 +597,26 @@ const RENDER = (() => {
     }
 
     // Placement highlights for the human player during build/setup.
-    if (pid === 0 && (tool === 'settlement' || tool === 'road' || tool === 'city')) {
+    if (pid >= 0 && (tool === 'settlement' || tool === 'road' || tool === 'city')) {
       if (tool === 'settlement') {
         for (const v of map.vertices) {
           // During the first setup round any legal corner goes; afterwards a
           // settlement must attach to the player's road network (official).
           if (RULES.settlementSpotFree(g, v.id) &&
-              (g.phase === 'setup1' || RULES.settlementConnects(g, 0, v.id))) {
+              (g.phase === 'setup1' || RULES.settlementConnects(g, pid, v.id))) {
             jobs.push({ d: depth(v.x, v.y) + 0.6, f: () => drawHighlightVertex(ctx, v, project, '#4ec96a', pulse) });
           }
         }
       } else if (tool === 'road') {
         for (const e of map.edges) {
-          if (RULES.roadBuildable(g, 0, e.id)) {
+          if (RULES.roadBuildable(g, pid, e.id)) {
             const va = map.vertices[e.a], vb = map.vertices[e.b];
             jobs.push({ d: depth(e.x, e.y) + 0.6, f: () => drawHighlightEdge(ctx, e, va, vb, project, '#4ec96a', pulse) });
           }
         }
       } else if (tool === 'city') {
         for (const v of map.vertices) {
-          if (RULES.canBuildCity(g, 0, v.id)) {
+          if (RULES.canBuildCity(g, pid, v.id)) {
             jobs.push({ d: depth(v.x, v.y) + 0.6, f: () => drawHighlightVertex(ctx, v, project, '#e0a83c', pulse) });
           }
         }

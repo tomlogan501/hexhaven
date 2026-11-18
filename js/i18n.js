@@ -6,6 +6,10 @@ const I18N = (() => {
 
   const DICT = {
     en: {
+      on_room_server: 'Server: {server}',
+      on_rolled: '{name} rolled {a} + {b} = {t}.',
+      on_title: 'Online multiplayer', on_close: 'Close', on_name: 'Your name', on_server: 'Room server (optional)', on_create: 'Create room', on_code: 'Room code', on_join: 'Join room', on_resume: 'Resume previous game', on_share: 'Share the room code and server address with your friends.', on_start: 'Start game', on_return: 'Return to game', on_leave: 'Leave room', on_local: 'Back to local game', on_wait: 'Waiting for the host to start.', on_need_players: 'At least two players are needed.', on_connecting: 'Connecting…', on_disconnected: 'Connection lost. Reconnecting…', on_trade_to: 'Offer to', on_cancel: 'Cancel offer', on_offer_wait: 'Waiting for {name} to respond.', on_discard_wait: '{name} must discard.', on_steal: 'Choose a highlighted player to steal from.',
+      mp_mode: 'Game mode', mp_solo: 'Against AI', mp_local: 'Pass and play', mp_opponents: 'Opponents', mp_new_hint: 'Choose a mode and opponents, then start a new game.', mp_player: 'Player {n}', mp_handoff: 'Pass the device to {name}', mp_accept: 'Accept', mp_decline: 'Decline', mp_ready: 'Ready', mp_trade_confirm: '{name}: accept {from}’s offer? They give {give} and request {want}.',
       status_loading: 'Generating the island…',
       status_winner: '{name} wins with {n} victory points!',
       status_discard: '{name} must discard {n} cards',
@@ -144,6 +148,10 @@ const I18N = (() => {
     },
 
     fr: {
+      on_room_server: 'Serveur : {server}',
+      on_rolled: '{name} a lancé {a} + {b} = {t}.',
+      on_title: 'Multijoueur en ligne', on_close: 'Fermer', on_name: 'Votre nom', on_server: 'Serveur de partie (facultatif)', on_create: 'Créer une partie', on_code: 'Code de partie', on_join: 'Rejoindre', on_resume: 'Reprendre la partie', on_share: 'Partagez le code et l’adresse du serveur avec vos amis.', on_start: 'Commencer', on_return: 'Retour à la partie', on_leave: 'Quitter', on_local: 'Retour au jeu local', on_wait: 'En attente du lancement par l’hôte.', on_need_players: 'Deux joueurs au minimum sont nécessaires.', on_connecting: 'Connexion…', on_disconnected: 'Connexion perdue. Reconnexion…', on_trade_to: 'Proposer à', on_cancel: 'Annuler l’offre', on_offer_wait: 'En attente de la réponse de {name}.', on_discard_wait: '{name} doit défausser.', on_steal: 'Choisissez un joueur en surbrillance.',
+      mp_mode: 'Mode de jeu', mp_solo: 'Contre l’IA', mp_local: 'À tour de rôle', mp_opponents: 'Adversaires', mp_new_hint: 'Choisissez le mode et les adversaires, puis commencez une nouvelle partie.', mp_player: 'Joueur {n}', mp_handoff: 'Passez l’appareil à {name}', mp_accept: 'Accepter', mp_decline: 'Refuser', mp_ready: 'Prêt', mp_trade_confirm: '{name} : accepter l’offre de {from} ? Offre : {give} ; demande : {want}.',
       status_loading: 'Génération de l’île…',
       status_winner: '{name} gagne avec {n} points de victoire !',
       status_discard: '{name} doit défausser {n} cartes',
@@ -282,6 +290,10 @@ const I18N = (() => {
     },
 
     es: {
+      on_room_server: 'Servidor: {server}',
+      on_rolled: '{name} ha sacado {a} + {b} = {t}.',
+      on_title: 'Multijugador en línea', on_close: 'Cerrar', on_name: 'Tu nombre', on_server: 'Servidor de partidas (opcional)', on_create: 'Crear sala', on_code: 'Código de sala', on_join: 'Unirse', on_resume: 'Reanudar partida', on_share: 'Comparte el código y la dirección del servidor con tus amigos.', on_start: 'Empezar', on_return: 'Volver a la partida', on_leave: 'Salir de la sala', on_local: 'Volver al juego local', on_wait: 'Esperando a que el anfitrión empiece.', on_need_players: 'Se necesitan al menos dos jugadores.', on_connecting: 'Conectando…', on_disconnected: 'Conexión perdida. Reconectando…', on_trade_to: 'Ofrecer a', on_cancel: 'Cancelar oferta', on_offer_wait: 'Esperando la respuesta de {name}.', on_discard_wait: '{name} debe descartar.', on_steal: 'Elige un jugador resaltado.',
+      mp_mode: 'Modo de juego', mp_solo: 'Contra la IA', mp_local: 'Por turnos', mp_opponents: 'Oponentes', mp_new_hint: 'Elige el modo y los oponentes y comienza una nueva partida.', mp_player: 'Jugador {n}', mp_handoff: 'Pasa el dispositivo a {name}', mp_accept: 'Aceptar', mp_decline: 'Rechazar', mp_ready: 'Listo', mp_trade_confirm: '{name}: ¿aceptas la oferta de {from}? Ofrece {give} y pide {want}.',
       status_loading: 'Generando la isla…',
       status_winner: '¡{name} gana con {n} puntos de victoria!',
       status_discard: '{name} debe descartar {n} cartas',
@@ -421,6 +433,10 @@ const I18N = (() => {
     },
 
     de: {
+      on_room_server: 'Server: {server}',
+      on_rolled: '{name} würfelt {a} + {b} = {t}.',
+      on_title: 'Online-Multiplayer', on_close: 'Schließen', on_name: 'Dein Name', on_server: 'Spielserver (optional)', on_create: 'Raum erstellen', on_code: 'Raumcode', on_join: 'Beitreten', on_resume: 'Spiel fortsetzen', on_share: 'Teile den Raumcode und die Serveradresse mit deinen Freunden.', on_start: 'Spiel starten', on_return: 'Zurück zum Spiel', on_leave: 'Raum verlassen', on_local: 'Zurück zum lokalen Spiel', on_wait: 'Warte auf den Spielstart durch den Gastgeber.', on_need_players: 'Mindestens zwei Spieler sind erforderlich.', on_connecting: 'Verbindung…', on_disconnected: 'Verbindung verloren. Erneuter Versuch…', on_trade_to: 'Angebot an', on_cancel: 'Angebot zurückziehen', on_offer_wait: 'Warte auf die Antwort von {name}.', on_discard_wait: '{name} muss Karten abwerfen.', on_steal: 'Wähle einen markierten Spieler.',
+      mp_mode: 'Spielmodus', mp_solo: 'Gegen KI', mp_local: 'Abwechselnd spielen', mp_opponents: 'Gegner', mp_new_hint: 'Modus und Gegner wählen und ein neues Spiel starten.', mp_player: 'Spieler {n}', mp_handoff: 'Gerät an {name} weitergeben', mp_accept: 'Annehmen', mp_decline: 'Ablehnen', mp_ready: 'Bereit', mp_trade_confirm: '{name}: Angebot von {from} annehmen? Angebot: {give}; gefragt: {want}.',
       status_loading: 'Insel wird generiert…',
       status_winner: '{name} gewinnt mit {n} Siegpunkten!',
       status_discard: '{name} muss {n} Karten abwerfen',

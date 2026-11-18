@@ -29,8 +29,72 @@
   let tradeMode = 'players'; // 'players' | 'bank'
   const discardPick = {}; // res -> count chosen so far
   let debugRunning = false; // a full-game debug run is in progress
+  let localMultiplayer = false;
+  let onlineState = null;
+  let onlineConnected = false;
+  let onlineInFlight = false;
+  const isOnline = () => !!(onlineState && onlineState.started);
+  let discardQueue = [];
+  let discardPlayer = null;
+  let viewingPlayer = 0;
+  let handoffPending = false;
+  let afterHandoff = null;
+  let tradeDecision = null;
+
+  const humanTurn = () => isOnline()
+    ? onlineConnected && !onlineInFlight && g.current === onlineState.playerId && g.discardTarget === null && !onlineState.offer
+    : !g.players[g.current].isAI;
+  const handPlayer = () => isOnline() ? onlineState.playerId :
+    (discardPlayer === null ? (humanTurn() ? g.current : 0) : discardPlayer);
+  function showHandoff(open, focusId) {
+    const overlay = $('handoff');
+    if (!overlay) return;
+    overlay.classList.toggle('open', open);
+    const stage = $('stage');
+    if (stage) for (const child of stage.children) {
+      if (child !== overlay) child.inert = open;
+    }
+    if ($('topbar')) $('topbar').inert = open;
+    const focus = $(focusId);
+    if (open && focus && focus.focus) focus.focus();
+  }
+  function handoffTo(pid, callback) {
+    if (!localMultiplayer || viewingPlayer === pid) { if (callback) callback(); return; }
+    afterHandoff = callback || null;
+    viewingPlayer = pid;
+    handoffPending = true;
+    const overlay = $('handoff');
+    if (overlay) {
+      $('handoff-message').textContent = I18N.t('mp_handoff', { name: g.players[pid].name });
+      showHandoff(true, 'btn-handoff');
+    }
+  }
+  const handoffButton = $('btn-handoff');
+  if (handoffButton) handoffButton.addEventListener('click', () => {
+    handoffPending = false;
+    showHandoff(false);
+    const callback = afterHandoff;
+    afterHandoff = null;
+    if (callback) callback();
+    else render();
+  });
+  for (const [id, accepted] of [['btn-trade-accept', true], ['btn-trade-decline', false]]) {
+    const button = $(id);
+    if (button) button.addEventListener('click', () => {
+      if (!tradeDecision) return;
+      const decide = tradeDecision;
+      tradeDecision = null;
+      $('trade-response').classList.add('hidden');
+      $('btn-handoff').classList.remove('hidden');
+      showHandoff(false);
+      handoffPending = false;
+      decide(accepted);
+    });
+  }
 
   const isSetup = () => g.phase === 'setup1' || g.phase === 'setup2';
+  const displayTool = () => isOnline() && humanTurn() && isSetup()
+    ? (g.phase === 'setup1' ? 'settlement' : 'road') : tool;
 
   // ---- logging / status
   function log(msg) {
@@ -47,6 +111,9 @@
     el.innerHTML = '';
     for (const line of g.log.slice(-40)) {
       const d = document.createElement('div');
+      // Hands and drawn card identities are private in pass-and-play.
+      if (localMultiplayer && line && typeof line === 'object' &&
+          ['log_dev_buy', 'log_you_dev_buy', 'log_steal'].includes(line.k)) continue;
       d.textContent = I18N.log(line);   // structured entries render localized
       el.appendChild(d);
     }
@@ -67,9 +134,11 @@
       return;
     }
     const p = STATE.currentPlayer(g);
-    if (discardNeed > 0) {
+    if (isOnline() && g.discardTarget !== null && g.discardTarget !== onlineState.playerId) {
+      el.textContent = I18N.t('on_discard_wait', { name: g.players[g.discardTarget].name });
+    } else if (discardNeed > 0) {
       el.textContent = I18N.t('status_discard',
-        { name: p.name, n: discardNeed });
+        { name: g.players[handPlayer()].name, n: discardNeed });
     } else if (g.phase === 'setup1') {
       el.textContent = I18N.t('status_setup1', { name: p.name });
     } else if (g.phase === 'setup2') {
@@ -104,7 +173,8 @@
   }
 
   function takeStolenCard(victimId) {
-    RULES.stealFromPlayer(g, 0, victimId);
+    if (isOnline()) { onlineAction({ type: 'steal', victim: victimId }); return; }
+    RULES.stealFromPlayer(g, g.current, victimId);
     finishRobber();
   }
 
@@ -115,7 +185,7 @@
     for (const p of g.players) {
       const row = document.createElement('div');
       row.className = 'player' + (p.id === g.current ? ' active' : '');
-      if (pendingStealVictims && pendingStealVictims.includes(p.id)) {
+      if (pendingStealVictims && humanTurn() && pendingStealVictims.includes(p.id)) {
         row.classList.add('steal-target');
         row.addEventListener('click', () => takeStolenCard(p.id));
       }
@@ -139,7 +209,9 @@
 
       const sc = document.createElement('span');
       sc.className = 'score';
-      sc.textContent = p.score + ' vp';
+      const hiddenVP = localMultiplayer && p.id !== handPlayer() && !g.winner
+        ? p.devCards.filter(card => card === 'victory').length : 0;
+      sc.textContent = (p.score - hiddenVP) + ' vp';
 
       row.append(sw, nm, sc);
       el.appendChild(row);
@@ -194,6 +266,21 @@
       title.textContent = tradeMode === 'bank'
         ? I18N.t('tp_bank_title') : I18N.t('tp_title');
     }
+    const targetRow = $('online-trade-target-row');
+    const target = $('online-trade-target');
+    if (targetRow && target) {
+      const show = isOnline() && tradeMode === 'players';
+      targetRow.classList.toggle('hidden', !show);
+      if (show) {
+        const selected = target.value;
+        target.innerHTML = '';
+        for (const p of g.players) if (p.id !== onlineState.playerId) {
+          const option = document.createElement('option');
+          option.value = String(p.id); option.textContent = p.name; target.appendChild(option);
+        }
+        if (Array.from(target.options).some(option => option.value === selected)) target.value = selected;
+      }
+    }
     const hint = $('tradehint');
     if (!hint) return;
     if (tradeMode === 'bank') {
@@ -202,7 +289,7 @@
       if (giveSel && wantSel) {
         hint.textContent = I18N.t('tp_bank_plan', {
           g: giveSel[1] + ' ' + I18N.res(giveSel[0]),
-          r: RULES.tradeRateFor(g, 0, giveSel[0]),
+          r: RULES.tradeRateFor(g, g.current, giveSel[0]),
           w: I18N.res(wantSel[0]),
         });
       } else {
@@ -226,13 +313,25 @@
       setHint(I18N.t('h_trade_set'));
       return;
     }
+    if (isOnline()) {
+      const target = $('online-trade-target');
+      if (!target || target.value === '') return;
+      onlineAction({ type: 'offer', to: Number(target.value), give: gives, want: wants }).then(ok => {
+        if (ok) { trade = null; render(); }
+      });
+      return;
+    }
     const txt = (b) => Object.entries(b)
       .filter(([, n]) => n > 0).map(([r, n]) => [r, n]);
+    if (localMultiplayer) {
+      offerToPlayers(gives, wants);
+      return;
+    }
     // Offer to every AI in turn; the first one to accept closes the deal.
     for (const p of g.players) {
-      if (p.id === 0) continue;
+      if (p.id === g.current) continue;
       if (AI.wantsTrade(g, p.id, gives, wants) &&
-          RULES.partnerTrade(g, 0, p.id, gives, wants)) {
+          RULES.partnerTrade(g, g.current, p.id, gives, wants)) {
         AUDIO.build();
         trade = null;
         render();
@@ -244,6 +343,40 @@
     }
     setHint(I18N.t('h_reject'));
     render();
+  }
+
+  // Each recipient decides behind the same privacy screen used for turns.
+  function offerToPlayers(gives, wants) {
+    const from = g.current;
+    const recipients = g.players.filter(p => p.id !== from);
+    function next() {
+      const p = recipients.shift();
+      if (!p) {
+        handoffTo(from);
+        setHint(I18N.t('h_reject'));
+        render();
+        return;
+      }
+      handoffTo(p.id, () => {
+        handoffPending = true;
+        $('handoff-message').textContent = I18N.t('mp_trade_confirm', {
+          name: p.name, from: g.players[from].name,
+          give: bundleText(gives), want: bundleText(wants),
+        });
+        $('btn-handoff').classList.add('hidden');
+        $('trade-response').classList.remove('hidden');
+        showHandoff(true, 'btn-trade-accept');
+        tradeDecision = accepted => {
+          if (accepted && RULES.partnerTrade(g, from, p.id, gives, wants)) {
+            AUDIO.build();
+            trade = null;
+            handoffTo(from);
+            render();
+          } else next();
+        };
+      });
+    }
+    next();
   }
 
   // Bank / harbour exchange for the human player: give one resource at the
@@ -258,15 +391,21 @@
     }
     const [giveRes, giveN] = giveSel;
     const wantRes = wantSel[0];
-    const rate = RULES.tradeRateFor(g, 0, giveRes);
-    if (giveN < rate || g.players[0].hand[giveRes] < rate) {
+    const rate = RULES.tradeRateFor(g, g.current, giveRes);
+    if (giveN < rate || g.players[g.current].hand[giveRes] < rate) {
       setHint(I18N.t('tp_bank_need',
         { r: rate, n: rate, res: I18N.res(giveRes) }));
       return;
     }
+    if (isOnline()) {
+      onlineAction({ type: 'maritime', give: giveRes, want: wantRes }).then(ok => {
+        if (ok) { trade = null; render(); }
+      });
+      return;
+    }
     const ok = rate >= 4
-      ? RULES.bankTrade(g, 0, giveRes, rate, wantRes)
-      : RULES.harborTrade(g, 0, giveRes, rate, wantRes);
+      ? RULES.bankTrade(g, g.current, giveRes, rate, wantRes)
+      : RULES.harborTrade(g, g.current, giveRes, rate, wantRes);
     if (!ok) {
       setHint(I18N.t('tp_bank_need',
         { r: rate, n: rate, res: I18N.res(giveRes) }));
@@ -292,7 +431,7 @@
     const el = $('hand');
     if (!el) return;
     el.innerHTML = '';
-    const p = g.players[0];
+    const p = g.players[handPlayer()];
     for (const [res, info] of Object.entries(STATE.RES)) {
       const picked = discardPick[res] || 0;
       const chip = document.createElement('span');
@@ -334,7 +473,7 @@
     const el = $('devcards');
     if (!el) return;
     el.innerHTML = '';
-    const p = g.players[0];
+    const p = g.players[handPlayer()];
     for (const type of Object.keys(STATE.DEV_CARDS)) {
       const n = p.devCards.filter((t) => t === type).length;
       if (n === 0) continue;
@@ -342,17 +481,17 @@
       b.className = 'btn';
       b.id = 'btn-play-' + type;
       b.textContent = I18N.dev(type) + ' ×' + n;
-      b.disabled = g.current !== 0 || busy || g.phase !== 'build';
+      b.disabled = !humanTurn() || busy || discardNeed > 0 || g.phase !== 'build';
       b.addEventListener('click', () => playDevCard(type));
       el.appendChild(b);
     }
     const buy = $('btn-dev');
     if (buy) {
       // Same rule as the build pieces: hide the purchase it can't pay for.
-      const cantPay = !busy && g.current === 0 && g.phase === 'build' &&
+      const cantPay = !busy && humanTurn() && g.phase === 'build' &&
         g.deck.length > 0 && !RULES.canAfford(p, 'devCard');
       buy.classList.toggle('hidden', cantPay);
-      buy.disabled = g.current !== 0 || busy || g.phase !== 'build' ||
+      buy.disabled = !humanTurn() || busy || discardNeed > 0 || g.phase !== 'build' ||
         g.deck.length === 0 || !RULES.canAfford(p, 'devCard');
     }
   }
@@ -399,10 +538,10 @@
   function render() {
     resizeCanvas();
     if (g.winner && !winAnnounced) { winAnnounced = true; AUDIO.win(); }
-    if (g.phase !== 'done') RULES.refreshScores(g);
-    RENDER.draw(ctx, g, canvas.width, canvas.height, null, tool, 0, cam, { t: animT });
+    if (!isOnline() && g.phase !== 'done') RULES.refreshScores(g);
+    RENDER.draw(ctx, g, canvas.width, canvas.height, null, displayTool(), humanTurn() ? g.current : -1, cam, { t: animT });
     const graphEl = $('resgraph');
-    if (graphEl) GRAPH.draw(graphEl, g,
+    if (graphEl && !isOnline()) GRAPH.draw(graphEl, g,
       ($('graph-res') || {}).value || null);
     renderPlayers();
     renderHand();
@@ -412,6 +551,7 @@
     renderLog();
     status();
     syncBuildBar();
+    renderOnlineOffer();
     if (typeof ART !== 'undefined' && ART.inflight && !repaintQueued) {
       repaintQueued = true;
       ART.settled().then(() => {
@@ -449,23 +589,23 @@
     g.robberFromSeven = true;
     log({ k: 'log_seven' });
 
-    const toDiscard = RULES.playersToDiscard(g);
-    let humanOwes = 0;
-    for (const pid of toDiscard) {
-      if (pid === 0) {
-        humanOwes = Math.floor(STATE.totalCards(g.players[0]) / 2);
-        continue;
-      }
-      AI.autoDiscard(g, pid);
-    }
+    discardQueue = RULES.playersToDiscard(g);
+    continueDiscards(rollerId);
+  }
 
-    if (humanOwes > 0) {
-      for (const k of Object.keys(discardPick)) delete discardPick[k];
-      discardNeed = humanOwes;
+  function continueDiscards(rollerId) {
+    while (discardQueue.length) {
+      const pid = discardQueue.shift();
+      if (g.players[pid].isAI) { AI.autoDiscard(g, pid); continue; }
+      discardPlayer = pid;
+      discardNeed = Math.floor(STATE.totalCards(g.players[pid]) / 2);
+      handoffTo(pid);
       setHint(I18N.t('h_discard_chips'));
       render();
-      return;                       // resumes via finishDiscard()
+      return;
     }
+    discardPlayer = null;
+    handoffTo(rollerId);
     afterDiscards(rollerId);
   }
 
@@ -473,29 +613,36 @@
     const n = pickedCount();
     const amounts = {};
     for (const [res, c] of Object.entries(discardPick)) amounts[res] = c;
+    if (isOnline()) {
+      onlineAction({ type: 'discard', amounts }).then(ok => {
+        if (ok) { for (const k of Object.keys(discardPick)) delete discardPick[k]; render(); }
+      });
+      return;
+    }
+    const pid = discardPlayer;
     discardNeed = 0;
     for (const k of Object.keys(discardPick)) delete discardPick[k];
-    RULES.discardCards(g, 0, amounts);
-    log({ k: 'log_you_discard', p: { n } });
-    afterDiscards(0);
+    RULES.discardCards(g, pid, amounts);
+    log(localMultiplayer ? { k: 'log_discard', p: { name: g.players[pid].name, n } } : { k: 'log_you_discard', p: { n } });
+    continueDiscards(g.current);
   }
 
   function afterDiscards(rollerId) {
-    render();
-    if (rollerId !== 0) return;      // the AI moves its own robber
-    if (!g.robberFromSeven) return;
-    g.phase = 'robber';
-    setHint(I18N.t('h_robber_tile'));
+    if (!g.players[rollerId].isAI && g.robberFromSeven) {
+      g.phase = 'robber';
+      setHint(I18N.t('h_robber_tile'));
+    }
     render();
   }
 
   function resolveHumanRobber(tileKey) {
+    if (isOnline()) { if (!pendingStealVictims) onlineAction({ type: 'robber', tile: tileKey }); return; }
     if (tileKey !== g.robber) {
       RULES.moveRobber(g, tileKey);
       AUDIO.robber();
-      const candidates = RULES.stealCandidates(g, 0);
+      const candidates = RULES.stealCandidates(g, g.current);
       if (candidates.length === 1) {
-        RULES.stealFromPlayer(g, 0, candidates[0]);
+        RULES.stealFromPlayer(g, g.current, candidates[0]);
         finishRobber();
         return;
       }
@@ -516,8 +663,9 @@
 
   // ---- dice for the human
   function roll() {
-    if (busy || g.phase === 'done' || g.current !== 0) return;
+    if (handoffPending || busy || g.phase === 'done' || !humanTurn()) return;
     if (discardNeed > 0) return;
+    if (isOnline()) { if (g.phase === 'roll') onlineAction({ type: 'roll' }); return; }
     if (isSetup()) {
       // Roll doubles as "skip ahead" so the opening can never dead-end.
       autoFinishHumanSetup();
@@ -531,16 +679,16 @@
     const b = rollDice();
     const total = a + b;
     g.dice = { a, b, total };
-    const p = g.players[0];
+    const p = g.players[handPlayer()];
     p.hasRolled = true;
     g.phase = 'build';
     setHint(I18N.t('h_rolled', { a, b, t: total }));
-    log({ k: 'log_you_roll', p: { n: total } });
+    log(localMultiplayer ? { k: 'log_roll', p: { name: p.name, n: total } } : { k: 'log_you_roll', p: { n: total } });
     AUDIO.dice();
     render();
 
     if (total === 7) {
-      resolveSeven(0);
+      resolveSeven(g.current);
       return;
     }
     produce(total);
@@ -550,29 +698,30 @@
 
   // ---- building during a turn
   function tryPlace(kind, id) {
-    if (busy || g.current !== 0 || g.phase !== 'build') return false;
-    const p = g.players[0];
+    if (handoffPending || discardNeed > 0 || busy || !humanTurn() || g.phase !== 'build') return false;
+    if (isOnline()) { onlineAction({ type: 'build', kind, id }); return true; }
+    const p = g.players[handPlayer()];
     if (kind === 'road') {
-      if (!RULES.roadBuildable(g, 0, id)) return false;
+      if (!RULES.roadBuildable(g, g.current, id)) return false;
       // A road costs 1 wood + 1 brick — or a free-road credit.
       if (p.freeRoads <= 0 && !RULES.canAfford(p, 'road')) {
         setHint(I18N.t('h_cost_road'));
         render();
         return false;
       }
-      if (!RULES.buildRoad(g, 0, id)) return false;
-      log({ k: 'log_you_road' });
+      if (!RULES.buildRoad(g, g.current, id)) return false;
+      log(localMultiplayer ? { k: 'log_road', p: { name: p.name } } : { k: 'log_you_road' });
     } else if (kind === 'settlement') {
       if (!RULES.settlementSpotFree(g, id)) return false;
       // After setup, a settlement must attach to the player's road network.
-      if (!RULES.settlementConnects(g, 0, id)) return false;
+      if (!RULES.settlementConnects(g, g.current, id)) return false;
       if (!RULES.canAfford(p, 'settlement')) return false;
-      RULES.buildSettlement(g, 0, id);
-      log({ k: 'log_you_settle' });
+      RULES.buildSettlement(g, g.current, id);
+      log(localMultiplayer ? { k: 'log_settle', p: { name: p.name } } : { k: 'log_you_settle' });
     } else if (kind === 'city') {
-      if (!RULES.canBuildCity(g, 0, id)) return false;
-      RULES.buildCity(g, 0, id);
-      log({ k: 'log_you_city' });
+      if (!RULES.canBuildCity(g, g.current, id)) return false;
+      RULES.buildCity(g, g.current, id);
+      log(localMultiplayer ? { k: 'log_city', p: { name: p.name } } : { k: 'log_you_city' });
     } else {
       return false;
     }
@@ -601,22 +750,23 @@
   }
 
   function trySetupPlace(kind, id) {
-    if (busy || g.current !== 0) return false;
-    const p = g.players[0];
+    if (handoffPending || busy || !humanTurn()) return false;
+    if (isOnline()) { onlineAction({ type: 'setup', kind, id }); return true; }
+    const p = g.players[handPlayer()];
     if (g.phase === 'setup1') {
       if (kind !== 'settlement') return false;
       if (!RULES.settlementSpotFree(g, id)) return false;
       freeBuild(p, 'settlement', id);
       g.phase = 'setup2';
-      log({ k: 'log_you_first_settle' });
+      log(localMultiplayer ? { k: 'log_settle', p: { name: p.name } } : { k: 'log_you_first_settle' });
       setHint(I18N.t('h_after_settle'));
       AUDIO.build();
       render();
     } else if (g.phase === 'setup2') {
       if (kind !== 'road') return false;
-      if (!RULES.roadBuildable(g, 0, id)) return false;
+      if (!RULES.roadBuildable(g, g.current, id)) return false;
       freeBuild(p, 'road', id);
-      log({ k: 'log_you_first_road' });
+      log(localMultiplayer ? { k: 'log_road', p: { name: p.name } } : { k: 'log_you_first_road' });
       AUDIO.build();
       RULES.refreshScores(g);
       advanceSetup();
@@ -654,6 +804,7 @@
       setupIdx = 0;
       g.phase = 'roll';
       g.current = g.setupOrder[0];
+      handoffTo(g.current);
       g.dice = null;
       busy = false;
       log({ k: 'log_placed' });
@@ -664,6 +815,7 @@
     g.phase = 'setup1';
     g.current = g.setupOrder[setupIdx];
     const p = STATE.currentPlayer(g);
+    if (!p.isAI) handoffTo(p.id);
     if (p.isAI) {
       busy = true;
       setTimeout(() => {
@@ -683,19 +835,19 @@
   // completes even if the human never clicks.
   function autoFinishHumanSetup() {
     let guard = 0;
-    while (g.current === 0 && isSetup() && !busy && guard++ < 20) {
-      const p = g.players[0];
+    while (humanTurn() && isSetup() && !busy && !handoffPending && guard++ < 20) {
+      const p = g.players[handPlayer()];
       if (g.phase === 'setup1') {
         // The AI pickers gate on affordability, so lend a temporary hand:
         // setup pieces are free and freeBuild folds tile gains back in.
         const saved = p.hand;
         p.hand = Object.assign(STATE.emptyHand(),
           { forest: 4, hill: 4, field: 4, pasture: 4, mount: 4 });
-        const s = AI.bestSettlement(g, 0);
+        const s = AI.bestSettlement(g, g.current, false);
         p.hand = saved;
         if (!s) { setHint(I18N.t('h_no_settle')); render(); return; }
         freeBuild(p, 'settlement', s.id);
-        log({ k: 'log_you_first_settle' });
+        log(localMultiplayer ? { k: 'log_settle', p: { name: p.name } } : { k: 'log_you_first_settle' });
         g.phase = 'setup2';
         RULES.refreshScores(g);
         render();
@@ -703,11 +855,11 @@
         const saved = p.hand;
         p.hand = Object.assign(STATE.emptyHand(),
           { forest: 4, hill: 4, field: 4, pasture: 4, mount: 4 });
-        const r = AI.bestRoad(g, 0);
+        const r = AI.bestRoad(g, g.current);
         p.hand = saved;
         if (!r) { setHint(I18N.t('h_no_road')); render(); return; }
         freeBuild(p, 'road', r.id);
-        log({ k: 'log_you_first_road' });
+        log(localMultiplayer ? { k: 'log_road', p: { name: p.name } } : { k: 'log_you_first_road' });
         RULES.refreshScores(g);
         advanceSetup();              // may hand over to an AI (sets busy)
         if (busy) return;
@@ -718,8 +870,9 @@
 
   // ---- development cards
   function buyDevCard() {
-    if (busy || g.current !== 0 || g.phase !== 'build') return;
-    const card = RULES.buyDevCard(g, 0);
+    if (handoffPending || discardNeed > 0 || busy || !humanTurn() || g.phase !== 'build') return;
+    if (isOnline()) { onlineAction({ type: 'buyDev' }); return; }
+    const card = RULES.buyDevCard(g, g.current);
     if (!card) {
       setHint(I18N.t(g.deck.length === 0 ? 'h_deck_empty' : 'h_dev_cost'));
       render();
@@ -731,8 +884,9 @@
   }
 
   function playDevCard(type) {
-    if (busy || g.current !== 0 || g.phase !== 'build') return;
-    const p = g.players[0];
+    if (handoffPending || discardNeed > 0 || busy || !humanTurn() || g.phase !== 'build') return;
+    if (isOnline()) { onlineAction({ type: 'playDev', card: type }); return; }
+    const p = g.players[handPlayer()];
     if (type !== 'victory' && p.devBoughtThisTurn.includes(type)) {
       setHint(I18N.t('h_dev_bought_turn', { card: I18N.dev(type) }));
       render();
@@ -744,18 +898,18 @@
       return;
     }
     const before = p.devCards.length;
-    if (!RULES.playDevCard(g, 0, type)) {
+    if (!RULES.playDevCard(g, g.current, type)) {
       if (p.devCards.length === before) {
         setHint(I18N.t('h_dev_none', { card: I18N.dev(type) }));
         render();
       }
       return;
     }
-    log({ k: 'log_you_dev_play', p: { dev: type } });
+    if (!localMultiplayer) log({ k: 'log_you_dev_play', p: { dev: type } });
     if (RULES.checkWinner(g)) { render(); return; }
     // A Knight summons the robber: let the human place it.
     if (type === 'knight' && g.robberFromSeven) {
-      resolveSeven(0);
+      resolveSeven(g.current);
       return;
     }
     setHint(I18N.t('h_dev_played', { card: I18N.dev(type) }));
@@ -764,8 +918,9 @@
 
   // ---- turn flow
   function endTurn() {
-    if (busy || g.current !== 0 || g.phase === 'done') return;
+    if (handoffPending || busy || !humanTurn() || g.phase === 'done') return;
     if (discardNeed > 0) return;
+    if (isOnline()) { if (g.phase === 'build') onlineAction({ type: 'end' }); return; }
     if (isSetup()) {
       autoFinishHumanSetup();
       return;
@@ -779,19 +934,21 @@
       return;
     }
     if (RULES.checkWinner(g)) { render(); return; }
-    const p = g.players[0];
+    const p = g.players[handPlayer()];
     GRAPH.turnSnapshot(g);
     p.hasRolled = false;
     p.devPlayedThisTurn = false;
     p.devBoughtThisTurn = [];
     p.builtThisTurn = 0;
     tool = null;
+    trade = null;
     g.current = (g.current + 1) % g.players.length;
     g.dice = null;
     g.phase = 'roll';
     const cur = STATE.currentPlayer(g);
     if (cur.isAI) runAITurn(cur);
     else {
+      handoffTo(cur.id);
       setHint(I18N.t('h_roll_dice'));
       render();
     }
@@ -832,6 +989,7 @@
     const cur = STATE.currentPlayer(g);
     if (cur.isAI) runAITurn(cur);
     else {
+      handoffTo(cur.id);
       setHint(I18N.t('h_roll_dice'));
       render();
     }
@@ -1085,7 +1243,7 @@
   // canvas-only loop skips the DOM work render() does each frame.
   function highlightsActive() {
     if (!g || g.phase === 'done') return false;
-    if (g.current !== 0 || busy) return false;
+    if (handoffPending || !humanTurn() || busy) return false;
     return isSetup() || g.phase === 'robber' ||
       (g.phase === 'build' && (tool || g.robberFromSeven));
   }
@@ -1093,7 +1251,7 @@
     if (highlightsActive()) {
       animT = ts;
       resizeCanvas();
-      RENDER.draw(ctx, g, canvas.width, canvas.height, null, tool, 0, cam, { t: ts });
+      RENDER.draw(ctx, g, canvas.width, canvas.height, null, displayTool(), humanTurn() ? g.current : -1, cam, { t: ts });
     }
     requestAnimationFrame(frame);
   }
@@ -1101,8 +1259,8 @@
 
   canvas.addEventListener('click', (ev) => {
     if (dragMoved) { dragMoved = false; return; }  // that was a pan, not a tap
-    if (g.current !== 0 || busy || g.phase === 'done') return;
-    if (discardNeed > 0) return;          // finish the discard first
+    if (handoffPending || !humanTurn() || busy || g.phase === 'done') return;
+    if (discardNeed > 0 || (isOnline() && pendingStealVictims)) return; // finish the current decision first
     const pos = canvasPos(ev);
     if (g.phase === 'robber') {
       const t = pickTile(pos);
@@ -1130,8 +1288,8 @@
   });
 
   function syncBuildBar() {
-    const p = g.players[0];
-    const buildable = !busy && g.current === 0 && (isSetup() || g.phase === 'build');
+    const p = g.players[handPlayer()];
+    const buildable = !busy && humanTurn() && (isSetup() || g.phase === 'build');
     for (const b of document.querySelectorAll('[data-build]')) {
       const kind = b.dataset.build;
       b.classList.toggle('active', kind === tool);
@@ -1146,14 +1304,21 @@
       }
       const cantPay = buildable && !freeNow && !RULES.canAfford(p, kind);
       b.classList.toggle('hidden', cantPay);
-      b.disabled = g.current !== 0 || busy ||
+      b.disabled = !humanTurn() || busy ||
         !(isSetup() || g.phase === 'build');
       // An active tool must not keep board highlights when it's unpayable.
       if (cantPay && kind === tool) tool = null;
     }
+    if (isOnline()) {
+      if ($('btn-roll')) $('btn-roll').disabled = !humanTurn() || g.phase !== 'roll';
+      if ($('btn-pass')) $('btn-pass').disabled = !humanTurn() || g.phase !== 'build' || g.robberFromSeven;
+    } else {
+      if ($('btn-roll')) $('btn-roll').disabled = false;
+      if ($('btn-pass')) $('btn-pass').disabled = false;
+    }
     const tradeBtn = $('btn-trade');
     if (tradeBtn) {
-      tradeBtn.disabled = g.current !== 0 || busy || discardNeed > 0 ||
+      tradeBtn.disabled = !humanTurn() || busy || discardNeed > 0 ||
         g.phase !== 'build';
       tradeBtn.classList.toggle('active', !!trade);
     }
@@ -1180,7 +1345,7 @@
       bound[b.id] = b;
       if (!b.dataset.build) b.dataset.build = kind;
       b.addEventListener('click', () => {
-        if (g.current !== 0 || busy || g.phase === 'done') return;
+        if (handoffPending || !humanTurn() || busy || g.phase === 'done') return;
         if (!(isSetup() || g.phase === 'build')) return;
         tool = tool === b.dataset.build ? null : b.dataset.build;
         render();
@@ -1193,7 +1358,7 @@
   const tradeBtn = $('btn-trade');
   if (tradeBtn) {
     tradeBtn.addEventListener('click', () => {
-      if (busy || g.current !== 0 || discardNeed > 0 || g.phase !== 'build') return;
+      if (handoffPending || busy || !humanTurn() || discardNeed > 0 || g.phase !== 'build') return;
       trade = trade ? null : { give: {}, want: {} };
       render();
     });
@@ -1221,7 +1386,7 @@
       if (!chip || !chip.dataset.res) return;
       const res = chip.dataset.res;
       if (chip.parentElement.id === 'trade-give') {
-        const max = g.players[0].hand[res];
+        const max = g.players[g.current].hand[res];
         trade.give[res] = ((trade.give[res] || 0) + 1) % (max + 1);
       } else if (tradeMode === 'bank') {
         // A bank exchange takes exactly one wanted card: single-pick row.
@@ -1274,11 +1439,11 @@
   const handEl = $('hand');
   if (handEl) {
     handEl.addEventListener('click', (ev) => {
-      if (discardNeed <= 0 || g.current !== 0 || busy) return;
+      if (discardNeed <= 0 || busy || handoffPending || (isOnline() && (!onlineConnected || onlineInFlight))) return;
       const chip = ev.target.closest ? ev.target.closest('.res') : null;
       if (!chip || !chip.dataset || !chip.dataset.res) return;
       const res = chip.dataset.res;
-      const p = g.players[0];
+      const p = g.players[handPlayer()];
       if (pickedCount() >= discardNeed) return;
       if ((discardPick[res] || 0) >= p.hand[res]) return;
       discardPick[res] = (discardPick[res] || 0) + 1;
@@ -1304,11 +1469,34 @@
   if (debugBtn) debugBtn.addEventListener('click', () => { runDebugAutoPlay(); });
 
   function startNewGame() {
+    if (typeof ONLINE !== 'undefined') ONLINE.suspend(false);
+    onlineState = null;
+    onlineConnected = false;
+    onlineInFlight = false;
+    if ($('turninfo')) $('turninfo').textContent = '';
     winAnnounced = false;
     trade = null;
+    pendingStealVictims = null;
     const aiCount = opponentCount ? Math.min(3, Math.max(1, Number(opponentCount.value) || 2)) : 2;
     const radius = islandSize && islandSize.value === 'xl' ? 3 : 2;
+    localMultiplayer = !debugRunning && $('game-mode') && $('game-mode').value === 'local';
     g = STATE.newGame(aiCount + 1, radius);
+    if (localMultiplayer) {
+      g.players.forEach((p, i) => { p.isAI = false; p.name = I18N.t('mp_player', { n: i + 1 }); });
+      const graph = $('hud-graph');
+      if (graph) graph.classList.add('hidden');
+    }
+    viewingPlayer = 0;
+    handoffPending = false;
+    afterHandoff = null;
+    tradeDecision = null;
+    const tradeResponse = $('trade-response');
+    if (tradeResponse) tradeResponse.classList.add('hidden');
+    if ($('btn-handoff')) $('btn-handoff').classList.remove('hidden');
+    discardPlayer = null;
+    discardQueue = [];
+    const overlay = $('handoff');
+    if (overlay) showHandoff(false);
     setupIdx = 0;
     tool = null;
     busy = false;
@@ -1387,7 +1575,7 @@
 
   // Auto-resolve anything the human must decide, so a full game runs unattended.
   function debugResolveHumanObligations() {
-    const p = g.players[0];
+    const p = g.players[handPlayer()];
     if (discardNeed > 0) {
       AI.autoDiscard(g, 0);
       discardNeed = 0;
@@ -1426,7 +1614,7 @@
       // Setup pieces are free, but the AI helpers only suggest a spot when
       // the player can afford one, so lend a temporary hand for each pick.
       function pickSetupSpot(kind) {
-        const p = g.players[0];
+        const p = g.players[handPlayer()];
         const saved = p.hand;
         p.hand = Object.assign(STATE.emptyHand(),
           { forest: 4, hill: 4, field: 4, pasture: 4, mount: 4 });
@@ -1439,14 +1627,14 @@
 
       let guard = 0;
       while (isSetup() && !g.winner && guard++ < 40) {
-        if (g.current === 0) {
+        if (humanTurn()) {
           // Human slot: place with the AI's own helpers.
-          const p = g.players[0];
+          const p = g.players[handPlayer()];
           if (g.phase === 'setup1') {
             const s = pickSetupSpot('settlement');
             if (s) {
               freeBuild(p, 'settlement', s.id);
-              log({ k: 'log_you_first_settle' });
+              log(localMultiplayer ? { k: 'log_settle', p: { name: p.name } } : { k: 'log_you_first_settle' });
               g.phase = 'setup2';
             } else {
               break;              // nowhere legal left to play
@@ -1455,7 +1643,7 @@
             const r = pickSetupSpot('road');
             if (r) {
               freeBuild(p, 'road', r.id);
-              log({ k: 'log_you_first_road' });
+              log(localMultiplayer ? { k: 'log_road', p: { name: p.name } } : { k: 'log_you_first_road' });
             }
             advanceSetup();
           }
@@ -1481,7 +1669,7 @@
 
         if (isSetup()) { autoFinishHumanSetup(); await sleep(300); continue; }
 
-        if (g.current === 0) {
+        if (humanTurn()) {
           debugResolveHumanObligations();
           if (g.phase === 'roll') { roll(); await sleep(30); }
           debugResolveHumanObligations();
@@ -1525,10 +1713,168 @@
     }
   }
 
+  // ---- online rooms
+  function renderOnlineOffer() {
+    const panel = $('online-offer');
+    if (!panel) return;
+    const offer = isOnline() && onlineState.offer;
+    panel.classList.toggle('hidden', !offer);
+    if (!offer) return;
+    const from = g.players[offer.from], to = g.players[offer.to];
+    const recipient = onlineState.playerId === offer.to;
+    $('online-offer-text').textContent = recipient
+      ? I18N.t('mp_trade_confirm', { name: to.name, from: from.name,
+          give: bundleText(offer.give), want: bundleText(offer.want) })
+      : I18N.t('on_offer_wait', { name: to.name });
+    for (const [id, visible] of [['online-accept', recipient], ['online-decline', recipient],
+      ['online-cancel', onlineState.playerId === offer.from]]) {
+      const button = $(id);
+      button.classList.toggle('hidden', !visible);
+      button.disabled = !onlineConnected || onlineInFlight;
+    }
+  }
+
+  async function onlineAction(action) {
+    if (!isOnline() || !onlineConnected || onlineInFlight) return false;
+    onlineInFlight = true;
+    render();
+    const ok = await ONLINE.act(action);
+    onlineInFlight = false;
+    render();
+    return ok;
+  }
+
+  function showOnlineOverlay(open) {
+    const overlay = $('onlineoverlay');
+    if (!overlay) return;
+    overlay.classList.toggle('open', open);
+    const stage = $('stage');
+    if (stage) for (const child of stage.children) if (child !== overlay) child.inert = open;
+    if ($('topbar')) $('topbar').inert = open;
+    const focus = open && $('online-close');
+    if (focus && focus.focus) focus.focus();
+  }
+
+  function renderOnlineLobby() {
+    if (!$('online-menu')) return;
+    const inRoom = !!onlineState;
+    $('online-connect').classList.toggle('hidden', inRoom);
+    $('online-room').classList.toggle('hidden', !inRoom);
+    $('online-resume').classList.toggle('hidden', inRoom || !ONLINE.hasSaved());
+    if (!inRoom) return;
+    $('online-room-code').textContent = onlineState.code;
+    $('online-room-server').textContent = I18N.t('on_room_server', { server: ONLINE.server() });
+    const list = $('online-players');
+    list.innerHTML = '';
+    for (const p of onlineState.players) {
+      const item = document.createElement('li'); item.textContent = p.name; list.appendChild(item);
+    }
+    const started = onlineState.started;
+    $('online-start').classList.toggle('hidden', started || !onlineState.host);
+    $('online-start').disabled = !onlineConnected || onlineState.players.length < 2;
+    $('online-return').classList.toggle('hidden', !started);
+    $('online-leave').textContent = I18N.t(started ? 'on_local' : 'on_leave');
+    $('online-wait').textContent = started ? '' : I18N.t(onlineState.host && onlineState.players.length < 2 ? 'on_need_players' : 'on_wait');
+  }
+
+  function showOnlineError(message) {
+    if ($('online-message')) $('online-message').textContent = message;
+    if (isOnline()) setHint(message);
+  }
+
+  if (typeof ONLINE !== 'undefined' && $('online-menu')) {
+    ONLINE.configure({
+      onState(next) {
+        const wasOnline = isOnline();
+        const wasRoom = !!onlineState;
+        const previousTurn = wasOnline ? g.current : null;
+        const previousDiscard = discardNeed;
+        onlineState = next;
+        renderOnlineLobby();
+        if (!next.started) {
+          if (!wasRoom) showOnlineOverlay(true);
+          return;
+        }
+        g = next.game;
+        g.map.byKey = new Map(g.map.tiles.map(tile => [HEX.key(tile.q, tile.r), tile]));
+        localMultiplayer = false;
+        discardNeed = next.discardNeed;
+        discardPlayer = next.playerId;
+        pendingStealVictims = next.victims;
+        if (previousDiscard !== discardNeed) for (const key of Object.keys(discardPick)) delete discardPick[key];
+        if (previousTurn !== g.current) { tool = null; trade = null; }
+        if (!wasOnline) {
+          winAnnounced = false;
+          if ($('hud-graph')) $('hud-graph').classList.add('hidden');
+          showOnlineOverlay(false);
+          $('optoverlay').classList.remove('open');
+        }
+        if ($('turninfo')) $('turninfo').textContent = onlineConnected ? next.code : I18N.t('on_disconnected');
+        if (g.dice) setHint(I18N.t('on_rolled', { name: g.players[g.current].name, a: g.dice.a, b: g.dice.b, t: g.dice.total }));
+        else if (g.phase === 'roll') setHint(I18N.t('h_roll_dice'));
+        else if (isSetup()) setHint(I18N.t(g.phase === 'setup1' ? 'h_setup1' : 'h_setup2'));
+        if (pendingStealVictims) setHint(I18N.t('on_steal'));
+        render();
+      },
+      onConnection(connected) {
+        onlineConnected = connected;
+        if ($('online-message')) $('online-message').textContent = connected ? '' : I18N.t('on_disconnected');
+        if ($('turninfo')) $('turninfo').textContent = isOnline() ? (connected ? onlineState.code : I18N.t('on_disconnected')) : '';
+        renderOnlineLobby();
+        if (isOnline()) render();
+      },
+      onError(message) { showOnlineError(message); },
+      onExpired(message) {
+        startNewGame();
+        renderOnlineLobby();
+        $('optoverlay').classList.add('open');
+        showOnlineOverlay(true);
+        showOnlineError(message);
+      },
+    });
+    $('btn-online').addEventListener('click', () => {
+      renderOnlineLobby();
+      showOnlineOverlay(true);
+    });
+    $('online-close').addEventListener('click', () => showOnlineOverlay(false));
+    const runConnect = async fn => {
+      $('online-message').textContent = I18N.t('on_connecting');
+      $('online-create').disabled = true; $('online-join').disabled = true;
+      try { await fn(); }
+      catch (error) { showOnlineError(error.message || I18N.t('on_disconnected')); }
+      finally { $('online-create').disabled = false; $('online-join').disabled = false; }
+    };
+    $('online-create').addEventListener('click', () => runConnect(() => ONLINE.create(
+      $('online-server').value, $('online-name').value, $('online-size').value === 'xl' ? 3 : 2)));
+    $('online-join').addEventListener('click', () => runConnect(() => ONLINE.join(
+      $('online-server').value, $('online-code').value, $('online-name').value)));
+    $('online-resume').addEventListener('click', () => {
+      $('online-message').textContent = I18N.t('on_connecting');
+      ONLINE.resume();
+    });
+    $('online-start').addEventListener('click', () => ONLINE.start());
+    $('online-return').addEventListener('click', () => showOnlineOverlay(false));
+    $('online-leave').addEventListener('click', async () => {
+      if (!await ONLINE.leave()) return;
+      onlineState = null; onlineConnected = false;
+      startNewGame();
+      showOnlineOverlay(false);
+      $('optoverlay').classList.add('open');
+      renderOnlineLobby();
+    });
+    $('online-accept').addEventListener('click', () => onlineAction({ type: 'respond', accept: true }));
+    $('online-decline').addEventListener('click', () => onlineAction({ type: 'respond', accept: false }));
+    $('online-cancel').addEventListener('click', () => onlineAction({ type: 'cancelOffer' }));
+  }
+
   // ---- boot
   I18N.applyStatic();
   refreshFxLabels();
   startNewGame();
+  if (typeof ONLINE !== 'undefined' && $('online-menu') && ONLINE.hasSaved()) {
+    $('online-message').textContent = I18N.t('on_connecting');
+    ONLINE.resume();
+  }
   window.addEventListener('resize', render);
   // Rotation re-fits the base scale; zoom is kept relative to the fit.
   window.addEventListener('orientationchange', () => setTimeout(render, 120));

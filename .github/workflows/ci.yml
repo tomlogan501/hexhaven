@@ -28,3 +28,6 @@ jobs:
 
       - name: Turn flow, headless DOM (dom-test.js)
         run: node tools/dom-test.js
+
+      - name: Online rooms and game controller (online-test.js)
+        run: node tools/online-test.js
