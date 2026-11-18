@@ -294,6 +294,7 @@ async function sweep(want, step = 6) {
   check('boot: log populated', logText().length > 0);
   check('boot: status mentions setup', /settlement/i.test($('status').textContent),
     $('status').textContent);
+  check('roll disabled during settlement setup', $('btn-roll').disabled);
   check('boot: no exceptions during boot', true);
 
   // ---- opening settlement via real clicks
@@ -304,7 +305,9 @@ async function sweep(want, step = 6) {
     $('players').children[0].textContent);
   check('phase advanced to road placement',
     /place a road/i.test($('status').textContent), $('status').textContent);
+  check('roll disabled during road setup', $('btn-roll').disabled);
   check('placed opening road', await sweep('You built your first road'));
+  check('roll disabled while AI places its opening', $('btn-roll').disabled);
   await sleep(20);
   await sleep(50);
 
@@ -365,11 +368,20 @@ async function sweep(want, step = 6) {
     check('sidebar reflects post-setup scores', built.length > 0, built);
   }
 
+  check('roll enabled on the human roll phase', !$('btn-roll').disabled);
+  $('btn-pass').click();
+  check('roll disabled immediately when AI turn starts', $('btn-roll').disabled);
+  await sleep(100);
+  check('roll enabled when the human turn returns',
+    /roll the dice/i.test($('status').textContent) && !$('btn-roll').disabled,
+    $('status').textContent);
+
   // ---- roll
   if (/roll the dice/i.test($('status').textContent)) {
     $('btn-roll').click();
     check('roll produced a dice result', /rolled \d/.test(logText()),
       $('rollresult').textContent);
+    check('roll disabled after rolling, including seven resolution', $('btn-roll').disabled);
 
     // A 7 may open the discard UI or the robber phase; resolve either.
     let g7 = 0;
@@ -510,12 +522,21 @@ async function sweep(want, step = 6) {
     $('btn-sfx').textContent);
 
   $('btn-new').click();
+  check('roll disabled after starting a new game', $('btn-roll').disabled);
   await sleep(20);
   check('new game resets to setup1',
     /place a settlement/i.test($('status').textContent), $('status').textContent);
   check('new game resets the hand to empty',
     ['forest', 'pasture', 'field', 'hill', 'mount'].every(res =>
       LIVE().players[0].hand[res] === 0), $('hand').textContent);
+  $('btn-pass').click();
+  check('end turn places the first setup pair',
+    LIVE().players[0].settlements.length === 1 && LIVE().players[0].roads.length === 1);
+  await sleep(100);
+  $('btn-pass').click();
+  check('end turn completes the second setup pair',
+    LIVE().players[0].settlements.length === 2 && LIVE().players[0].roads.length === 2 &&
+    !$('btn-roll').disabled, $('status').textContent);
 
   $('opponent-count').value = '1';
   $('island-size').value = 'xl';

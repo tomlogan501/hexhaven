@@ -51,7 +51,7 @@
           <button class="btn" id="btn-dev" data-i18n="btn_dev">Dev card</button>
         </div>
         <div class="chips">
-          <button class="btn primary" id="btn-roll" data-i18n="btn_roll">Roll dice</button>
+          <button class="btn primary" id="btn-roll" data-i18n="btn_roll" disabled>Roll dice</button>
           <button class="btn" id="btn-trade" data-i18n="btn_trade">Trade</button>
           <button class="btn" id="btn-pass" data-i18n="btn_pass">End turn</button>
         </div>
@@ -194,16 +194,17 @@
 // TEMP probe: ?camtrade opens the trade panel and sets a sample offer.
 if (location.search.indexOf('camtrade') >= 0) {
   addEventListener('load', () => setTimeout(() => {
-    // Finish the setup (Roll doubles as skip-ahead), wait for the human's
+    // Finish the setup with End turn, wait for the human's
     // build phase, then open the panel and set a sample offer.
-    document.getElementById('btn-roll').click();
+    document.getElementById('btn-pass').click();
     const tryOpen = (tries) => {
       const b = document.getElementById('btn-trade');
       if (b && !b.disabled) {
         b.click();
       } else {
         const roll = document.getElementById('btn-roll');
-        if (roll && !roll.disabled) roll.click();  // setup skip / dice roll
+        if (roll && !roll.disabled) roll.click();
+        else document.getElementById('btn-pass').click(); // finish setup
       }
       if (b && !b.disabled) {
         setTimeout(() => {

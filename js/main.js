@@ -31,6 +31,7 @@
   let debugRunning = false; // a full-game debug run is in progress
 
   const isSetup = () => g.phase === 'setup1' || g.phase === 'setup2';
+  const canRoll = () => !busy && g.current === 0 && g.phase === 'roll' && discardNeed === 0;
 
   // ---- logging / status
   function log(msg) {
@@ -516,17 +517,7 @@
 
   // ---- dice for the human
   function roll() {
-    if (busy || g.phase === 'done' || g.current !== 0) return;
-    if (discardNeed > 0) return;
-    if (isSetup()) {
-      // Roll doubles as "skip ahead" so the opening can never dead-end.
-      autoFinishHumanSetup();
-      if (isSetup()) return;
-    }
-    if (g.phase !== 'roll') {
-      setHint(I18N.t('h_already'));
-      return;
-    }
+    if (!canRoll()) return;
     const a = rollDice();
     const b = rollDice();
     const total = a + b;
@@ -666,6 +657,7 @@
     const p = STATE.currentPlayer(g);
     if (p.isAI) {
       busy = true;
+      render();
       setTimeout(() => {
         aiSetupPair();
         advanceSetup();
@@ -679,7 +671,7 @@
     }
   }
 
-  // Escape hatch used by End turn / Roll during setup so the opening always
+  // Escape hatch used by End turn during setup so the opening always
   // completes even if the human never clicks.
   function autoFinishHumanSetup() {
     let guard = 0;
@@ -691,7 +683,7 @@
         const saved = p.hand;
         p.hand = Object.assign(STATE.emptyHand(),
           { forest: 4, hill: 4, field: 4, pasture: 4, mount: 4 });
-        const s = AI.bestSettlement(g, 0);
+        const s = AI.bestSettlement(g, 0, false);
         p.hand = saved;
         if (!s) { setHint(I18N.t('h_no_settle')); render(); return; }
         freeBuild(p, 'settlement', s.id);
@@ -799,6 +791,7 @@
 
   function runAITurn(p) {
     busy = true;
+    render();
     setTimeout(() => {
       const a = rollDice();
       const b = rollDice();
@@ -1131,6 +1124,8 @@
 
   function syncBuildBar() {
     const p = g.players[0];
+    const rollBtn = $('btn-roll');
+    if (rollBtn) rollBtn.disabled = !canRoll();
     const buildable = !busy && g.current === 0 && (isSetup() || g.phase === 'build');
     for (const b of document.querySelectorAll('[data-build]')) {
       const kind = b.dataset.build;
